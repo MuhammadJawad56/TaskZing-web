@@ -1,47 +1,60 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { ChatMessage } from "@/components/dashboard/ChatMessage";
 import { ChatInput } from "@/components/dashboard/ChatInput";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { messages } from "@/lib/mock-data/messages";
-import { users } from "@/lib/mock-data/users";
+import { getMessagesByChatRoomId, getChatRoomById } from "@/lib/mock-data/messages";
+import { getUserById } from "@/lib/mock-data/users";
+import { MessageWithSender } from "@/lib/types/message";
+import { getMockSession } from "@/lib/auth/mock";
 
 export default function ChatDetailsPage() {
   const params = useParams();
-  const roomId = params.id as string;
+  const chatRoomId = params.id as string;
+  const session = getMockSession();
+  const currentUserId = session?.id || "";
   
-  const roomMessages = messages.filter(m => m.roomId === roomId);
-  const otherUserId = roomMessages[0]?.senderId !== "current-user" 
-    ? roomMessages[0]?.senderId 
-    : roomMessages[0]?.receiverId;
-  const otherUser = users.find(u => u.id === otherUserId);
+  const chatRoom = getChatRoomById(chatRoomId);
+  const roomMessages = getMessagesByChatRoomId(chatRoomId);
+  
+  // Find the other participant
+  const otherParticipantId = chatRoom?.participantIds.find(id => id !== currentUserId);
+  const otherUser = otherParticipantId ? getUserById(otherParticipantId) : undefined;
 
-  const [newMessages, setNewMessages] = useState<any[]>([]);
-  const allMessages = [...roomMessages, ...newMessages];
+  const [newMessages, setNewMessages] = useState<MessageWithSender[]>([]);
+
+  // Format messages with sender info
+  const allMessages: MessageWithSender[] = [
+    ...roomMessages.map(msg => ({
+      ...msg,
+      sender: msg.senderId !== currentUserId && otherUser ? {
+        id: otherUser.id,
+        fullName: otherUser.fullName || "Unknown",
+        photoUrl: otherUser.photoUrl,
+      } : undefined,
+    })),
+    ...newMessages,
+  ];
 
   const handleSendMessage = (content: string) => {
-    setNewMessages([...newMessages, {
-      id: `new-${Date.now()}`,
-      roomId,
-      senderId: "current-user",
-      receiverId: otherUserId,
+    const newMessage: MessageWithSender = {
+      messageId: `new-${Date.now()}`,
+      chatRoomId,
+      senderId: currentUserId,
+      type: "text",
       text: content,
-      content: content,
+      status: "sent",
       timestamp: new Date().toISOString(),
-      read: false,
-      sender: undefined,
-    }]);
-  };
-
-  const formatMessages = (msgs: any[]) => {
-    return msgs.map(msg => ({
-      ...msg,
-      sender: msg.senderId === "current-user" ? undefined : otherUser,
-    }));
+      deletedForEveryone: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      sender: undefined, // Own messages don't need sender
+    };
+    setNewMessages([...newMessages, newMessage]);
   };
 
   return (
@@ -50,7 +63,10 @@ export default function ChatDetailsPage() {
         <Card className="mb-4">
           <CardHeader>
             <div className="flex items-center gap-4">
-              <Avatar src={otherUser?.photoUrl} alt={otherUser?.fullName || "User"} />
+              <Avatar 
+                src={otherUser?.photoUrl} 
+                name={otherUser?.fullName || "User"}
+              />
               <div>
                 <CardTitle>{otherUser?.fullName || "Unknown User"}</CardTitle>
               </div>
@@ -60,11 +76,11 @@ export default function ChatDetailsPage() {
         
         <Card className="flex-1 flex flex-col overflow-hidden">
           <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-            {formatMessages(allMessages).map((message) => (
+            {allMessages.map((message) => (
               <ChatMessage
-                key={message.id}
-                message={message as any}
-                isOwn={message.senderId === "current-user"}
+                key={message.messageId}
+                message={message}
+                isOwn={message.senderId === currentUserId}
               />
             ))}
           </CardContent>

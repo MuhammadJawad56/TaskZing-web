@@ -27,7 +27,7 @@ export default function JobProposalsPage() {
         ) : (
           <div className="space-y-4">
             {jobProposals.map((proposal) => (
-              <ProposalCard key={proposal.id} proposal={proposal} />
+              <ProposalCard key={proposal.applicationId} proposal={proposal} />
             ))}
           </div>
         )}

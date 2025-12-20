@@ -54,10 +54,10 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {user.bio && (
+            {user.description && (
               <div>
                 <h3 className="font-semibold text-theme-primaryText mb-2">About</h3>
-                <p className="text-theme-accent4">{user.bio}</p>
+                <p className="text-theme-accent4">{user.description}</p>
               </div>
             )}
             {user.skills && user.skills.length > 0 && (

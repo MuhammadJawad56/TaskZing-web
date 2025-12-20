@@ -6,20 +6,33 @@ import { MessageSquare } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { messages } from "@/lib/mock-data/messages";
-import { users } from "@/lib/mock-data/users";
+import { chatRooms, getMessagesByChatRoomId } from "@/lib/mock-data/messages";
+import { getUserById } from "@/lib/mock-data/users";
+import { getMockSession } from "@/lib/auth/mock";
 
 export default function ChatsPage() {
-  const chatRooms = Array.from(new Set(messages.map(m => m.roomId))).map(roomId => {
-    const roomMessages = messages.filter(m => m.roomId === roomId);
+  const session = getMockSession();
+  const currentUserId = session?.id || "";
+
+  const chatRoomsList = chatRooms.map(room => {
+    const roomMessages = getMessagesByChatRoomId(room.chatRoomId);
     const lastMessage = roomMessages[roomMessages.length - 1];
-    const otherUserId = lastMessage.senderId !== "current-user" ? lastMessage.senderId : lastMessage.receiverId;
-    const otherUser = users.find(u => u.id === otherUserId);
+    
+    // Find the other participant
+    const otherParticipantId = room.participantIds.find(id => id !== currentUserId);
+    const otherUser = otherParticipantId ? getUserById(otherParticipantId) : undefined;
+    
+    // Count unread messages (messages not sent by current user and with status that indicates unread)
+    // Note: The Message type doesn't have a 'read' field, so we'll use status === "sent" as unread indicator
+    const unreadCount = roomMessages.filter(
+      m => m.senderId !== currentUserId && m.status === "sent"
+    ).length;
+
     return {
-      roomId,
+      chatRoomId: room.chatRoomId,
       otherUser,
       lastMessage,
-      unreadCount: roomMessages.filter(m => m.senderId !== "current-user" && !m.read).length,
+      unreadCount,
     };
   });
 
@@ -29,7 +42,7 @@ export default function ChatsPage() {
         <h1 className="text-3xl font-bold text-theme-primaryText mb-8">Messages</h1>
         
         <div className="space-y-2">
-          {chatRooms.length === 0 ? (
+          {chatRoomsList.length === 0 ? (
             <Card>
               <CardContent className="p-6 text-center">
                 <MessageSquare className="h-12 w-12 text-theme-accent4 mx-auto mb-4" />
@@ -37,12 +50,15 @@ export default function ChatsPage() {
               </CardContent>
             </Card>
           ) : (
-            chatRooms.map((room) => (
-              <Link key={room.roomId} href={`/chats/${room.roomId}`}>
+            chatRoomsList.map((room) => (
+              <Link key={room.chatRoomId} href={`/chats/${room.chatRoomId}`}>
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
-                      <Avatar src={room.otherUser?.photoUrl} alt={room.otherUser?.fullName || "User"} />
+                      <Avatar 
+                        src={room.otherUser?.photoUrl} 
+                        name={room.otherUser?.fullName || "User"}
+                      />
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <h3 className="font-semibold text-theme-primaryText">
@@ -54,7 +70,9 @@ export default function ChatsPage() {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-theme-accent4 truncate">{room.lastMessage.content}</p>
+                        <p className="text-sm text-theme-accent4 truncate">
+                          {room.lastMessage?.text || ""}
+                        </p>
                       </div>
                     </div>
                   </CardContent>

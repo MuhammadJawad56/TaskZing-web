@@ -16,9 +16,9 @@ export default function MyTasksPage() {
     t.clientId === session?.id || t.contractorId === session?.id
   );
 
-  const activeTasks = myTasks.filter(t => t.status === "open" || t.status === "in_progress");
-  const completedTasks = myTasks.filter(t => t.status === "completed");
-  const cancelledTasks = myTasks.filter(t => t.status === "cancelled");
+  const activeTasks = myTasks.filter(t => t.completionStatus === "open" || t.completionStatus === "in_progress");
+  const completedTasks = myTasks.filter(t => t.completionStatus === "completed");
+  const cancelledTasks = myTasks.filter(t => t.completionStatus === "cancelled");
 
   const tabs = [
     { id: "active", label: "Active", count: activeTasks.length },
