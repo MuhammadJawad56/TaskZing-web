@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-inter: "Inter", system-ui, sans-serif;
+    --font-inter-tight: "Inter Tight", system-ui, sans-serif;
+  }
+
+  * {
+    @apply border-theme-accent2;
+  }
+
+  body {
+    @apply bg-theme-primaryBackground text-theme-primaryText;
+    font-family: var(--font-inter);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-inter-tight);
+    font-weight: 600;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+

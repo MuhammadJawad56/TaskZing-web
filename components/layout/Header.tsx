@@ -1,0 +1,210 @@
+"use client";
+
+import React, { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { Menu, X, Search, User, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { getMockSession, clearMockSession } from "@/lib/auth/mock";
+import { useRouter } from "next/navigation";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+
+export const Header: React.FC = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const router = useRouter();
+
+  React.useEffect(() => {
+    // Check auth state
+    const session = getMockSession();
+    setIsAuthenticated(!!session);
+  }, []);
+
+  const handleLogout = () => {
+    clearMockSession();
+    setIsAuthenticated(false);
+    router.push("/");
+  };
+
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-theme-accent2 bg-theme-primaryBackground">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-2">
+            <Image
+              src="/images/logos/Taskzing-Logo-light-mode_1.png"
+              alt="TaskZing"
+              width={120}
+              height={40}
+              className="h-10 w-auto"
+            />
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link
+              href="/categories"
+              className="text-sm font-medium text-theme-primaryText hover:text-primary-500 transition-colors"
+            >
+              Categories
+            </Link>
+            <Link
+              href="/how-it-works"
+              className="text-sm font-medium text-theme-primaryText hover:text-primary-500 transition-colors"
+            >
+              How It Works
+            </Link>
+            <Link
+              href="/pricing"
+              className="text-sm font-medium text-theme-primaryText hover:text-primary-500 transition-colors"
+            >
+              Pricing
+            </Link>
+            <Link
+              href="/about"
+              className="text-sm font-medium text-theme-primaryText hover:text-primary-500 transition-colors"
+            >
+              About
+            </Link>
+          </nav>
+
+          {/* Search Bar - Desktop */}
+          <div className="hidden lg:flex items-center space-x-4 flex-1 max-w-md mx-8">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-theme-accent4" />
+              <input
+                type="text"
+                placeholder="Search tasks..."
+                className="w-full pl-10 pr-4 py-2 border border-theme-accent2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-theme-primaryBackground text-theme-primaryText"
+              />
+            </div>
+          </div>
+
+          {/* Auth Buttons - Desktop */}
+          <div className="hidden md:flex items-center space-x-4">
+            <LanguageSwitcher />
+            {isAuthenticated ? (
+              <>
+                <Link href="/dashboard">
+                  <Button variant="ghost" size="sm">
+                    <User className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" size="sm">
+                    Log In
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button variant="primary" size="sm">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden p-2 rounded-lg hover:bg-theme-accent2 text-theme-primaryText"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle menu"
+            aria-expanded={isMenuOpen}
+          >
+            {isMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
+          </button>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden py-4 border-t border-theme-accent2">
+            <nav className="flex flex-col space-y-4">
+              <Link
+                href="/categories"
+                className="text-sm font-medium text-theme-primaryText hover:text-primary-500"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Categories
+              </Link>
+              <Link
+                href="/how-it-works"
+                className="text-sm font-medium text-theme-primaryText hover:text-primary-500"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                How It Works
+              </Link>
+              <Link
+                href="/pricing"
+                className="text-sm font-medium text-theme-primaryText hover:text-primary-500"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Pricing
+              </Link>
+              <Link
+                href="/about"
+                className="text-sm font-medium text-theme-primaryText hover:text-primary-500"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                About
+              </Link>
+              <div className="pt-4 border-t border-theme-accent2 space-y-2">
+                <div className="pb-2">
+                  <LanguageSwitcher />
+                </div>
+                {isAuthenticated ? (
+                  <>
+                    <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="ghost" size="sm" className="w-full justify-start">
+                        <User className="h-4 w-4 mr-2" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        handleLogout();
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="ghost" size="sm" className="w-full">
+                        Log In
+                      </Button>
+                    </Link>
+                    <Link href="/signup" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="primary" size="sm" className="w-full">
+                        Sign Up
+                      </Button>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </nav>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+};
+
