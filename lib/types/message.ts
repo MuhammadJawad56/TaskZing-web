@@ -58,6 +58,11 @@ export interface ChatRoomWithParticipants extends ChatRoom {
     fullName: string;
     photoUrl?: string;
   }>;
+  otherParticipant?: {
+    id: string;
+    fullName: string;
+    photoUrl?: string;
+  };
   unreadCount?: number;
 }
 
