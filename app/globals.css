@@ -1,4 +1,4 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -6,14 +6,38 @@
   :root {
     --font-inter: "Inter", system-ui, sans-serif;
     --font-inter-tight: "Inter Tight", system-ui, sans-serif;
+
+    /* App theme tokens (LIGHT) */
+    --app-bg: #ffffff;
+    --app-surface: #ffffff;
+    --app-surface-2: #f3f4f6;
+    --app-text: #000000;
+    --app-muted: #6b7280;
+    --app-border: #d9d9d9;
+  }
+
+  /* App theme tokens (DARK = blue theme like old sidebar) */
+  html.dark,
+  html[data-theme="dark"] {
+    --app-bg: #013453; /* darkBlue-013 */
+    --app-surface: #013453;
+    --app-surface-2: #003d62; /* darkBlue-003 */
+    --app-text: #ffffff;
+    --app-muted: #d1d5db;
+    --app-border: rgba(255, 255, 255, 0.18);
   }
 
   * {
     @apply border-theme-accent2;
   }
 
+  html {
+    background-color: var(--app-bg);
+  }
+
   body {
-    @apply bg-theme-primaryBackground text-theme-primaryText;
+    background-color: var(--app-bg);
+    color: var(--app-text);
     font-family: var(--font-inter);
   }
 
@@ -28,4 +52,3 @@
     text-wrap: balance;
   }
 }
-

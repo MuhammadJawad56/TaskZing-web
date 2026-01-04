@@ -11,4 +11,5 @@ export * from "./Badge";
 export * from "./Avatar";
 export * from "./Modal";
 export * from "./Loading";
+export * from "./Toggle";
 

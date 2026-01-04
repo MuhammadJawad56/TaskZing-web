@@ -5,39 +5,38 @@ import Link from "next/link";
 import Image from "next/image";
 import { Menu, X, Search, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { getMockSession, clearMockSession } from "@/lib/auth/mock";
+import { useAuth } from "@/lib/firebase/AuthContext";
 import { useRouter } from "next/navigation";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const { user, loading } = useAuth();
   const router = useRouter();
 
-  React.useEffect(() => {
-    // Check auth state
-    const session = getMockSession();
-    setIsAuthenticated(!!session);
-  }, []);
+  // Don't show header if user is authenticated (dashboard header will show instead)
+  if (loading) {
+    return null; // Or a loading state
+  }
 
-  const handleLogout = () => {
-    clearMockSession();
-    setIsAuthenticated(false);
-    router.push("/");
-  };
+  if (user) {
+    return null; // Hide header after login
+  }
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-theme-accent2 bg-theme-primaryBackground">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
+          <Link href="/" className="flex items-center">
             <Image
               src="/images/logos/Taskzing-Logo-light-mode_1.png"
               alt="TaskZing"
-              width={120}
+              width={140}
               height={40}
               className="h-10 w-auto"
+              priority
             />
           </Link>
 
@@ -84,33 +83,16 @@ export const Header: React.FC = () => {
           {/* Auth Buttons - Desktop */}
           <div className="hidden md:flex items-center space-x-4">
             <LanguageSwitcher />
-            {isAuthenticated ? (
-              <>
-                <Link href="/dashboard">
-                  <Button variant="ghost" size="sm">
-                    <User className="h-4 w-4 mr-2" />
-                    Dashboard
-                  </Button>
-                </Link>
-                <Button variant="outline" size="sm" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </Button>
-              </>
-            ) : (
-              <>
-                <Link href="/login">
-                  <Button variant="ghost" size="sm">
-                    Log In
-                  </Button>
-                </Link>
-                <Link href="/signup">
-                  <Button variant="primary" size="sm">
-                    Sign Up
-                  </Button>
-                </Link>
-              </>
-            )}
+            <Link href="/login">
+              <Button variant="ghost" size="sm">
+                Log In
+              </Button>
+            </Link>
+            <Link href="/signup">
+              <Button variant="primary" size="sm">
+                Sign Up
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -164,41 +146,16 @@ export const Header: React.FC = () => {
                 <div className="pb-2">
                   <LanguageSwitcher />
                 </div>
-                {isAuthenticated ? (
-                  <>
-                    <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>
-                      <Button variant="ghost" size="sm" className="w-full justify-start">
-                        <User className="h-4 w-4 mr-2" />
-                        Dashboard
-                      </Button>
-                    </Link>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        handleLogout();
-                        setIsMenuOpen(false);
-                      }}
-                    >
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Logout
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/login" onClick={() => setIsMenuOpen(false)}>
-                      <Button variant="ghost" size="sm" className="w-full">
-                        Log In
-                      </Button>
-                    </Link>
-                    <Link href="/signup" onClick={() => setIsMenuOpen(false)}>
-                      <Button variant="primary" size="sm" className="w-full">
-                        Sign Up
-                      </Button>
-                    </Link>
-                  </>
-                )}
+                <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                  <Button variant="ghost" size="sm" className="w-full">
+                    Log In
+                  </Button>
+                </Link>
+                <Link href="/signup" onClick={() => setIsMenuOpen(false)}>
+                  <Button variant="primary" size="sm" className="w-full">
+                    Sign Up
+                  </Button>
+                </Link>
               </div>
             </nav>
           </div>

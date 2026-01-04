@@ -1,8 +1,11 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
+import Script from "next/script";
 import { Inter, Inter_Tight } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import { ConditionalFooter } from "@/components/layout/ConditionalFooter";
+import { AuthProvider } from "@/lib/firebase/AuthContext";
+import { ThemeProvider } from "@/lib/contexts/ThemeContext";
 
 const inter = Inter({ 
   subsets: ["latin"], 
@@ -50,13 +53,30 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${interTight.variable}`}>
-      <body className="min-h-screen flex flex-col bg-theme-primaryBackground text-theme-primaryText">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+    <html lang="en" className={`${inter.variable} ${interTight.variable}`} suppressHydrationWarning>
+      <body className="min-h-screen flex flex-col bg-[var(--app-bg)] text-[var(--app-text)]">
+        <Script
+          id="theme-script"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {\n                const theme = localStorage.getItem('theme') || 'light';\n                document.documentElement.dataset.theme = theme;\n                if (theme === 'dark') {\n                  document.documentElement.classList.add('dark');\n                } else {\n                  document.documentElement.classList.remove('dark');\n                }\n              })();
+            `,
+          }}
+        />
+        <ThemeProvider>
+          <AuthProvider>
+            <Header />
+            <main className="flex-1">{children}</main>
+            <ConditionalFooter />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
 }
+
+
+
+
 

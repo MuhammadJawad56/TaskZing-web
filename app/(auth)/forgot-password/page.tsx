@@ -5,21 +5,37 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { resetPassword } from "@/lib/firebase/auth";
+import { FirebaseError } from "firebase/app";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await resetPassword(email);
       setIsSubmitted(true);
+    } catch (err) {
+      if (err instanceof FirebaseError) {
+        if (err.code === "auth/user-not-found") {
+          // Still show success to prevent email enumeration
+          setIsSubmitted(true);
+        } else {
+          setError("An error occurred. Please try again.");
+        }
+      } else {
+        setError("An error occurred. Please try again.");
+      }
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   if (isSubmitted) {
@@ -72,6 +88,11 @@ export default function ForgotPasswordPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="p-3 bg-red-50 border border-accent-error rounded-lg text-sm text-accent-error" role="alert">
+                  {error}
+                </div>
+              )}
               <Input
                 label="Email address"
                 type="email"
