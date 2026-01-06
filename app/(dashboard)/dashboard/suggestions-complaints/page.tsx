@@ -101,12 +101,12 @@ export default function SuggestionsComplaintsPage() {
       <div className="mb-6">
         <button
           onClick={() => router.push("/dashboard/settings")}
-          className="mb-4 flex items-center text-theme-primaryText hover:text-primary-500 transition-colors"
+          className="mb-4 flex items-center text-theme-primaryText dark:text-white hover:text-primary-500 transition-colors"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           <span>Back</span>
         </button>
-        <h1 className="text-3xl font-bold text-theme-primaryText">Suggestions & Complaints</h1>
+        <h1 className="text-3xl font-bold text-theme-primaryText dark:text-white">Suggestions & Complaints</h1>
         <p className="text-theme-accent4 mt-2">Share your feedback or report issues to help us improve</p>
       </div>
 
@@ -118,7 +118,7 @@ export default function SuggestionsComplaintsPage() {
               {userName.charAt(0).toUpperCase()}
             </div>
             <div>
-              <h3 className="font-semibold text-theme-primaryText">{userName}</h3>
+              <h3 className="font-semibold text-theme-primaryText dark:text-white">{userName}</h3>
               <p className="text-sm text-theme-accent4">{userEmail}</p>
             </div>
           </div>
@@ -126,7 +126,7 @@ export default function SuggestionsComplaintsPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field (Read-only) */}
             <div>
-              <label className="block text-sm font-medium text-theme-primaryText mb-2">
+              <label className="block text-sm font-medium text-theme-primaryText dark:text-white mb-2">
                 Your Email
               </label>
               <Input
@@ -139,7 +139,7 @@ export default function SuggestionsComplaintsPage() {
 
             {/* Feedback Type Toggle */}
             <div>
-              <label className="block text-sm font-medium text-theme-primaryText mb-3">
+              <label className="block text-sm font-medium text-theme-primaryText dark:text-white mb-3">
                 Feedback Type
               </label>
               <div className="flex gap-3">
@@ -148,7 +148,7 @@ export default function SuggestionsComplaintsPage() {
                   onClick={() => setFeedbackType("suggestion")}
                   className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
                     feedbackType === "suggestion"
-                      ? "bg-gray-200 text-blue-900"
+                      ? "bg-gray-200 dark:bg-gray-700 text-blue-900 dark:text-white"
                       : "bg-primary-500 text-white hover:bg-primary-600"
                   }`}
                 >
@@ -159,7 +159,7 @@ export default function SuggestionsComplaintsPage() {
                   onClick={() => setFeedbackType("complaint")}
                   className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
                     feedbackType === "complaint"
-                      ? "bg-gray-200 text-blue-900"
+                      ? "bg-gray-200 dark:bg-gray-700 text-blue-900 dark:text-white"
                       : "bg-primary-500 text-white hover:bg-primary-600"
                   }`}
                 >
@@ -170,7 +170,7 @@ export default function SuggestionsComplaintsPage() {
 
             {/* Subject Field */}
             <div>
-              <label className="block text-sm font-medium text-theme-primaryText mb-2">
+              <label className="block text-sm font-medium text-theme-primaryText dark:text-white mb-2">
                 Subject <span className="text-accent-error">*</span>
               </label>
               <Input
@@ -184,7 +184,7 @@ export default function SuggestionsComplaintsPage() {
 
             {/* Message Field */}
             <div>
-              <label className="block text-sm font-medium text-theme-primaryText mb-2">
+              <label className="block text-sm font-medium text-theme-primaryText dark:text-white mb-2">
                 Message <span className="text-accent-error">*</span>
               </label>
               <div className="relative">
@@ -209,7 +209,7 @@ export default function SuggestionsComplaintsPage() {
 
             {/* Evidence Images */}
             <div>
-              <label className="block text-sm font-medium text-theme-primaryText mb-2">
+              <label className="block text-sm font-medium text-theme-primaryText dark:text-white mb-2">
                 Evidence Images (upto three Images allowed)
               </label>
               <div className="grid grid-cols-3 gap-4">
@@ -233,10 +233,10 @@ export default function SuggestionsComplaintsPage() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-primary-500 hover:bg-gray-50 transition-colors"
+                    className="aspect-square border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
-                    <Camera className="h-8 w-8 text-gray-400 mb-2" />
-                    <span className="text-sm text-gray-600">Add Photo</span>
+                    <Camera className="h-8 w-8 text-gray-400 dark:text-gray-500 mb-2" />
+                    <span className="text-sm text-gray-600 dark:text-gray-300">Add Photo</span>
                   </button>
                 )}
               </div>

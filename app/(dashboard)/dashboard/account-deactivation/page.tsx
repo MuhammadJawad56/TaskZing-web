@@ -57,12 +57,12 @@ export default function AccountDeactivationPage() {
       <div className="mb-6">
         <button
           onClick={() => router.push("/dashboard/settings")}
-          className="mb-4 flex items-center text-theme-primaryText hover:text-primary-500 transition-colors"
+          className="mb-4 flex items-center text-theme-primaryText dark:text-white hover:text-primary-500 transition-colors"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           <span>Back</span>
         </button>
-        <h1 className="text-3xl font-bold text-theme-primaryText">Account Deactivation</h1>
+        <h1 className="text-3xl font-bold text-theme-primaryText dark:text-white">Account Deactivation</h1>
         <p className="text-theme-accent4 mt-2">Select a Reason for Deactivating Your Account</p>
       </div>
 
@@ -85,7 +85,7 @@ export default function AccountDeactivationPage() {
                     className="mt-1 h-5 w-5 text-primary-500 border-2 border-primary-500 focus:ring-primary-500 focus:ring-2 cursor-pointer accent-primary-500"
                     style={{ accentColor: '#ef4444' }}
                   />
-                  <span className="flex-1 text-theme-primaryText group-hover:text-primary-500 transition-colors">
+                  <span className="flex-1 text-theme-primaryText dark:text-white group-hover:text-primary-500 transition-colors">
                     {reason}
                   </span>
                 </label>

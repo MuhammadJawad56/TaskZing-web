@@ -16,21 +16,21 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={textareaId}
-            className="block text-sm font-medium text-secondary-700 mb-1"
+            className="block text-sm font-medium text-theme-primaryText dark:text-white mb-1"
           >
             {label}
-            {props.required && <span className="text-red-500 ml-1">*</span>}
+            {props.required && <span className="text-accent-error ml-1">*</span>}
           </label>
         )}
         <textarea
           ref={ref}
           id={textareaId}
           className={cn(
-            "flex min-h-[80px] w-full rounded-lg border border-secondary-300 bg-white px-3 py-2 text-sm",
-            "ring-offset-white placeholder:text-secondary-400",
+            "flex min-h-[80px] w-full rounded-lg border border-theme-accent2 dark:border-gray-600 bg-theme-primaryBackground dark:bg-darkBlue-003 px-3 py-2 text-sm text-theme-primaryText dark:text-white",
+            "ring-offset-white placeholder:text-theme-accent4 dark:placeholder:text-gray-400",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
             "disabled:cursor-not-allowed disabled:opacity-50",
-            error && "border-red-500 focus-visible:ring-red-500",
+            error && "border-accent-error focus-visible:ring-accent-error",
             className
           )}
           aria-invalid={error ? "true" : "false"}
@@ -38,12 +38,12 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           {...props}
         />
         {error && (
-          <p id={`${textareaId}-error`} className="mt-1 text-sm text-red-600" role="alert">
+          <p id={`${textareaId}-error`} className="mt-1 text-sm text-accent-error" role="alert">
             {error}
           </p>
         )}
         {helperText && !error && (
-          <p id={`${textareaId}-helper`} className="mt-1 text-sm text-secondary-500">
+          <p id={`${textareaId}-helper`} className="mt-1 text-sm text-theme-accent4 dark:text-gray-300">
             {helperText}
           </p>
         )}

@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { useRouter } from "next/navigation";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { useTheme } from "@/lib/contexts/ThemeContext";
 
 export const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, loading } = useAuth();
   const router = useRouter();
+  const { theme } = useTheme();
 
   // Don't show header if user is authenticated (dashboard header will show instead)
   if (loading) {
@@ -31,7 +33,7 @@ export const Header: React.FC = () => {
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <Image
-              src="/images/logos/Taskzing-Logo-light-mode_1.png"
+              src={theme === "dark" ? "/images/logos/Taskzing-Logo-dark-mode_1.png" : "/images/logos/Taskzing-Logo-light-mode_1.png"}
               alt="TaskZing"
               width={140}
               height={40}

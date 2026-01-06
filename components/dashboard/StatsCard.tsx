@@ -23,10 +23,10 @@ export const StatsCard: React.FC<StatsCardProps> = ({
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-theme-accent4 mb-1">{title}</p>
-            <p className="text-2xl font-bold text-theme-primaryText">{value}</p>
+            <p className="text-sm font-medium text-theme-accent4 dark:text-gray-300 mb-1">{title}</p>
+            <p className="text-2xl font-bold text-theme-primaryText dark:text-white">{value}</p>
             {trend && (
-              <p className="text-sm mt-1 text-theme-accent4">
+              <p className="text-sm mt-1 text-theme-accent4 dark:text-gray-300">
                 {trend}
               </p>
             )}

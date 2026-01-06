@@ -44,13 +44,13 @@ interface NavItem {
 // Desktop navigation items
 const desktopNavItems: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Post a Task", href: "/dashboard/post-task", icon: PlusCircle },
-  { name: "Browse Tasks", href: "/dashboard/browse-tasks", icon: Search },
-  { name: "Proposals", href: "/dashboard/proposals", icon: FileText },
+  { name: "Explore", href: "/dashboard/explore", icon: Compass },
+  { name: "Showcase", href: "/dashboard/showcase", icon: Briefcase },
+  { name: "My Tasks", href: "/dashboard/my-tasks", icon: CheckSquare },
   { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
-  { name: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
-  { name: "Wallet", href: "/dashboard/wallet", icon: Wallet },
+  { name: "Profile", href: "/dashboard/profile", icon: User },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  { name: "Chat Zing", href: "/dashboard/chatzing-ai", icon: MessageCircle },
 ];
 
 // Mobile/Tablet navigation items (matching the design)

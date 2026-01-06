@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (isMounted && !initializedRef.current) {
         console.warn("Auth initialization timeout - setting loading to false");
         setLoading(false);
-        setInitialized(true);
+        initializedRef.current = true;
       }
     }, 2000); // 2 second timeout
 

@@ -49,13 +49,13 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({
               className="flex items-start space-x-4 pb-4 border-b border-theme-accent2 last:border-0 last:pb-0"
             >
               <div className="flex-1">
-                <h4 className="font-medium text-theme-primaryText mb-1">
+                <h4 className="font-medium text-theme-primaryText dark:text-white mb-1">
                   {activity.title}
                 </h4>
-                <p className="text-sm text-theme-accent4 mb-2">
+                <p className="text-sm text-theme-accent4 dark:text-gray-300 mb-2">
                   {activity.description}
                 </p>
-                <div className="flex items-center text-xs text-theme-accent4">
+                <div className="flex items-center text-xs text-theme-accent4 dark:text-gray-300">
                   <Clock className="h-3 w-3 mr-1" />
                   <span>
                     {formatDistanceToNow(new Date(activity.timestamp), {

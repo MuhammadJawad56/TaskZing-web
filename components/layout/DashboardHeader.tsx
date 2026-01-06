@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
+import { useTheme } from "@/lib/contexts/ThemeContext";
 
 interface DashboardHeaderProps {
   onMenuToggle?: () => void;
@@ -16,6 +17,7 @@ interface DashboardHeaderProps {
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle }) => {
   const { user, userData } = useAuth();
   const router = useRouter();
+  const { theme } = useTheme();
 
   const userName = user?.displayName || userData?.fullName || user?.email?.split("@")[0] || "U";
   const userInitial = userName.charAt(0).toUpperCase();
@@ -27,11 +29,11 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle }
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center">
             <Image
-              src="/images/logos/Taskzing-Logo-light-mode_1.png"
+              src={theme === "dark" ? "/images/logos/Taskzing-Logo-dark-mode_1.png" : "/images/logos/Taskzing-Logo-light-mode_1.png"}
               alt="TaskZing"
               width={140}
               height={40}
-              className="h-10 w-auto dark:brightness-0 dark:invert"
+              className="h-10 w-auto"
               priority
             />
           </Link>

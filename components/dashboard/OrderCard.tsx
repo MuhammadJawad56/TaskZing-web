@@ -49,14 +49,14 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, viewType = "client"
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-theme-primaryText mb-2">
+            <h3 className="text-lg font-semibold text-theme-primaryText dark:text-white mb-2">
               {order.taskTitle}
             </h3>
             {otherUser && (
               <div className="flex items-center space-x-3 mb-3">
                 <Avatar src={otherUser.photoUrl} name={otherUser.fullName} size="md" />
                 <div>
-                  <span className="font-medium text-theme-primaryText">
+                  <span className="font-medium text-theme-primaryText dark:text-white">
                     {otherUser.fullName}
                   </span>
                 </div>
@@ -74,14 +74,14 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, viewType = "client"
         </div>
 
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center text-theme-accent4">
+          <div className="flex items-center text-theme-accent4 dark:text-gray-300">
             <DollarSign className="h-4 w-4 mr-1" />
-            <span className="text-lg font-bold text-theme-primaryText">
+            <span className="text-lg font-bold text-theme-primaryText dark:text-white">
               ${order.amount.toFixed(2)}
             </span>
           </div>
           {order.dueDate && (
-            <div className="flex items-center text-sm text-theme-accent4">
+            <div className="flex items-center text-sm text-theme-accent4 dark:text-gray-300">
               <Calendar className="h-4 w-4 mr-1" />
               <span>Due: {new Date(order.dueDate).toLocaleDateString()}</span>
             </div>
@@ -89,7 +89,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, viewType = "client"
         </div>
 
         {order.completedAt && (
-          <div className="flex items-center text-sm text-theme-accent4 pt-4 border-t border-theme-accent2">
+          <div className="flex items-center text-sm text-theme-accent4 dark:text-gray-300 pt-4 border-t border-theme-accent2">
             <CheckCircle className="h-4 w-4 mr-1 text-accent-success" />
             <span>Completed on {new Date(order.completedAt).toLocaleDateString()}</span>
           </div>

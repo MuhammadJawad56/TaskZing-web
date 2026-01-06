@@ -44,7 +44,7 @@ export const ProposalCard: React.FC<ProposalCardProps> = ({
             {task && (
               <Link
                 href={`/task/${task.jobId}`}
-                className="text-lg font-semibold text-theme-primaryText hover:text-primary-500 mb-2 block"
+                className="text-lg font-semibold text-theme-primaryText dark:text-white hover:text-primary-500 mb-2 block"
               >
                 {task.title}
               </Link>
@@ -54,7 +54,7 @@ export const ProposalCard: React.FC<ProposalCardProps> = ({
                 <Avatar src={user.photoUrl} name={user.fullName} size="md" />
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="font-medium text-theme-primaryText">
+                    <span className="font-medium text-theme-primaryText dark:text-white">
                       {user.fullName}
                     </span>
                     {user.isVerified && (
@@ -75,20 +75,20 @@ export const ProposalCard: React.FC<ProposalCardProps> = ({
           </Badge>
         </div>
 
-        <p className="text-theme-primaryText mb-4 line-clamp-3">
+        <p className="text-theme-primaryText dark:text-white mb-4 line-clamp-3">
           {proposal.proposalText}
         </p>
 
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-4 text-sm">
-            <div className="flex items-center text-theme-accent4">
+            <div className="flex items-center text-theme-accent4 dark:text-gray-300">
               <DollarSign className="h-4 w-4 mr-1" />
-              <span className="font-semibold text-theme-primaryText">
+              <span className="font-semibold text-theme-primaryText dark:text-white">
                 ${proposal.bidAmount.toFixed(0)}
               </span>
             </div>
             {proposal.estimatedDuration && (
-              <div className="flex items-center text-theme-accent4">
+              <div className="flex items-center text-theme-accent4 dark:text-gray-300">
                 <Clock className="h-4 w-4 mr-1" />
                 <span>{proposal.estimatedDuration}</span>
               </div>
