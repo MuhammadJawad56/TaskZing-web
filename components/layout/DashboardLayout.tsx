@@ -44,7 +44,7 @@ interface NavItem {
 // Desktop navigation items
 const desktopNavItems: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Explore", href: "/dashboard/explore", icon: Compass },
+  { name: "Explore", href: "/explore", icon: Compass },
   { name: "Showcase", href: "/dashboard/showcase", icon: Briefcase },
   { name: "My Tasks", href: "/dashboard/my-tasks", icon: CheckSquare },
   { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
@@ -56,7 +56,7 @@ const desktopNavItems: NavItem[] = [
 // Mobile/Tablet navigation items (matching the design)
 const mobileNavItems: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Explore", href: "/dashboard/explore", icon: Compass },
+  { name: "Explore", href: "/explore", icon: Compass },
   { name: "Showcase Work", href: "/dashboard/showcase", icon: Briefcase },
   { name: "My Tasks", href: "/dashboard/my-tasks", icon: CheckSquare },
   { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
@@ -292,10 +292,10 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({
           
           {/* Explore */}
           <Link
-            href="/dashboard/explore"
+            href="/explore"
             className={cn(
               "flex flex-col items-center justify-center flex-1 h-full transition-colors",
-              pathname === "/dashboard/explore"
+              pathname === "/explore"
                 ? "text-primary-500"
                 : "text-gray-600 dark:text-gray-400"
             )}
