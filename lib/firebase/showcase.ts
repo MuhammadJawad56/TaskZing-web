@@ -17,13 +17,15 @@ import { db, storage } from "./config";
 export interface ShowcaseItem {
   id?: string;
   userId: string;
-  postingAs: "individual" | "company";
+  postingAs: "individual" | "company" | "instore";
   companyName?: string;
+  storeName?: string;
   title: string;
   skills?: string;
   description: string;
   location: string;
   imageUrls: string[];
+  videoUrl?: string;
   tags?: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -49,6 +51,17 @@ export async function uploadShowcaseImages(
   return Promise.all(uploadPromises);
 }
 
+// Upload video to Firebase Storage
+export async function uploadShowcaseVideo(
+  file: File,
+  userId: string
+): Promise<string> {
+  const storageRef = ref(storage, `showcases/${userId}/videos/${Date.now()}_${file.name}`);
+  await uploadBytes(storageRef, file);
+  const downloadURL = await getDownloadURL(storageRef);
+  return downloadURL;
+}
+
 // Delete image from Firebase Storage
 export async function deleteShowcaseImage(imageUrl: string): Promise<void> {
   try {
@@ -67,6 +80,23 @@ export async function deleteShowcaseImage(imageUrl: string): Promise<void> {
   }
 }
 
+// Delete video from Firebase Storage
+export async function deleteShowcaseVideo(videoUrl: string): Promise<void> {
+  try {
+    // Extract the path from the full URL
+    const url = new URL(videoUrl);
+    const pathMatch = url.pathname.match(/\/o\/(.+)\?/);
+    if (pathMatch) {
+      const decodedPath = decodeURIComponent(pathMatch[1]);
+      const videoRef = ref(storage, decodedPath);
+      await deleteObject(videoRef);
+    }
+  } catch (error) {
+    console.error("Error deleting video:", error);
+    // Continue even if video deletion fails
+  }
+}
+
 // Create a new showcase item
 export async function createShowcaseItem(
   userId: string,
@@ -76,11 +106,13 @@ export async function createShowcaseItem(
     userId,
     postingAs: data.postingAs,
     companyName: data.companyName || null,
+    storeName: data.storeName || null,
     title: data.title,
     skills: data.skills || null,
     description: data.description,
     location: data.location,
     imageUrls: data.imageUrls || [],
+    videoUrl: data.videoUrl || null,
     tags: data.tags || [],
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
@@ -149,10 +181,15 @@ export async function updateShowcaseItem(
 }
 
 // Delete a showcase item
-export async function deleteShowcaseItem(id: string, imageUrls?: string[]): Promise<void> {
+export async function deleteShowcaseItem(id: string, imageUrls?: string[], videoUrl?: string): Promise<void> {
   // Delete images from storage if provided
   if (imageUrls && imageUrls.length > 0) {
     await Promise.all(imageUrls.map((url) => deleteShowcaseImage(url)));
+  }
+
+  // Delete video from storage if provided
+  if (videoUrl) {
+    await deleteShowcaseVideo(videoUrl);
   }
 
   // Delete document from Firestore
