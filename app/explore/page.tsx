@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -18,6 +18,8 @@ import {
   Plus,
   ChevronDown,
   Check,
+  Camera,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Task } from "@/lib/types/task";
 import { getOpenJobs, searchJobs, getJobsNearLocation, getJobsByCategory } from "@/lib/firebase/jobs";
@@ -75,6 +77,16 @@ export default function ExplorePage() {
 
   // Expanded filter sections
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+
+  // Proposal modal state
+  const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
+  const [selectedJobForProposal, setSelectedJobForProposal] = useState<Task | null>(null);
+  const [proposalText, setProposalText] = useState("");
+  const [proposalBid, setProposalBid] = useState("");
+  const [proposalPhotos, setProposalPhotos] = useState<File[]>([]);
+  const [proposalPhotosPreviews, setProposalPhotosPreviews] = useState<string[]>([]);
+  const [isSubmittingProposal, setIsSubmittingProposal] = useState(false);
+  const proposalPhotoInputRef = useRef<HTMLInputElement>(null);
 
   // Active filters count
   const getActiveFiltersCount = () => {
@@ -294,6 +306,88 @@ export default function ExplorePage() {
     setFilteredJobs(jobs);
   };
 
+  // Proposal modal functions
+  const openProposalModal = (job: Task) => {
+    setSelectedJobForProposal(job);
+    setProposalText("");
+    setProposalBid("");
+    setProposalPhotos([]);
+    setProposalPhotosPreviews([]);
+    setIsProposalModalOpen(true);
+  };
+
+  const closeProposalModal = () => {
+    setIsProposalModalOpen(false);
+    setSelectedJobForProposal(null);
+    setProposalText("");
+    setProposalBid("");
+    setProposalPhotos([]);
+    setProposalPhotosPreviews([]);
+  };
+
+  const handleProposalPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newFiles = Array.from(files);
+    const newPreviews: string[] = [];
+
+    newFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        newPreviews.push(reader.result as string);
+        if (newPreviews.length === newFiles.length) {
+          setProposalPhotosPreviews((prev) => [...prev, ...newPreviews]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    setProposalPhotos((prev) => [...prev, ...newFiles]);
+  };
+
+  const removeProposalPhoto = (index: number) => {
+    setProposalPhotos((prev) => prev.filter((_, i) => i !== index));
+    setProposalPhotosPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmitProposal = async () => {
+    if (!proposalText.trim()) {
+      alert("Please write your proposal");
+      return;
+    }
+    if (!proposalBid.trim()) {
+      alert("Please enter your bid amount");
+      return;
+    }
+    if (!user) {
+      alert("Please login to submit a proposal");
+      router.push("/login");
+      return;
+    }
+
+    setIsSubmittingProposal(true);
+    
+    try {
+      // TODO: Implement proposal submission to Firebase
+      // For now, just show success message
+      console.log("Submitting proposal:", {
+        jobId: selectedJobForProposal?.jobId,
+        proposal: proposalText,
+        bid: proposalBid,
+        photos: proposalPhotos.length,
+      });
+      
+      alert("Proposal submitted successfully!");
+      closeProposalModal();
+    } catch (error) {
+      console.error("Error submitting proposal:", error);
+      alert("Failed to submit proposal. Please try again.");
+    } finally {
+      setIsSubmittingProposal(false);
+    }
+  };
+
   const formatPrice = (task: Task) => {
     if (task.jobType === "fixed") {
       return `$${task.fixedPrice || task.price} FIXED Rate`;
@@ -386,6 +480,113 @@ export default function ExplorePage() {
           className="fixed inset-0 bg-black/50 z-[100]"
           onClick={() => setIsFilterOpen(false)}
         />
+      )}
+
+      {/* Proposal Modal */}
+      {isProposalModalOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-[200]"
+            onClick={closeProposalModal}
+          />
+          <div className="fixed inset-0 z-[201] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-darkBlue-003 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+              {/* Modal Header */}
+              <div className="flex items-center justify-end p-4">
+                <button
+                  onClick={closeProposalModal}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="px-6 pb-6 space-y-5">
+                {/* Write a Proposal */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                    Write a Proposal <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={proposalText}
+                    onChange={(e) => setProposalText(e.target.value)}
+                    placeholder="Write your proposal here..."
+                    rows={6}
+                    className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:text-white text-sm resize-none"
+                  />
+                </div>
+
+                {/* Upload your work */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                    Upload your work
+                  </label>
+                  <div className="flex flex-wrap gap-3">
+                    {/* Photo Previews */}
+                    {proposalPhotosPreviews.map((preview, index) => (
+                      <div key={index} className="relative w-16 h-16">
+                        <img
+                          src={preview}
+                          alt={`Work ${index + 1}`}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                        <button
+                          onClick={() => removeProposalPhoto(index)}
+                          className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                    
+                    {/* Add Photo Button */}
+                    <button
+                      onClick={() => proposalPhotoInputRef.current?.click()}
+                      className="w-16 h-16 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center hover:border-red-500 transition-colors"
+                    >
+                      <Camera className="h-5 w-5 text-gray-400 mb-1" />
+                      <span className="text-xs text-gray-400">Add Photo</span>
+                    </button>
+                    <input
+                      ref={proposalPhotoInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleProposalPhotoSelect}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+
+                {/* Bid */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                    Bid <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={proposalBid}
+                    onChange={(e) => setProposalBid(e.target.value)}
+                    placeholder="e.g. $ 150"
+                    className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:text-white text-sm"
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex justify-center pt-2">
+                  <button
+                    onClick={handleSubmitProposal}
+                    disabled={isSubmittingProposal}
+                    className="px-8 py-2.5 bg-red-500 text-white rounded-full font-medium hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmittingProposal ? "Submitting..." : "Apply"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Filter Sidebar */}
@@ -787,12 +988,12 @@ export default function ExplorePage() {
                         <Bookmark className="h-4 w-4" />
                         Save
                       </button>
-                      <Link
-                        href={`/job-details/${job.jobId}`}
+                      <button
+                        onClick={() => openProposalModal(job)}
                         className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
                       >
                         Apply
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </div>
