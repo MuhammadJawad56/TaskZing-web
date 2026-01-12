@@ -10,10 +10,8 @@ import {
   sendMessage,
   subscribeToMessages,
   subscribeToChatRooms,
-  diagnoseFirebaseCollections,
 } from "@/lib/firebase/messages";
 import { Send } from "lucide-react";
-import { app } from "@/lib/firebase/config";
 
 export default function MessagesPage() {
   const { user } = useAuth();
@@ -23,11 +21,6 @@ export default function MessagesPage() {
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string>("");
-  const [diagnosticResults, setDiagnosticResults] = useState<string[]>([]);
-  
-  // Get Firebase project ID
-  const projectId = app.options.projectId || "Unknown";
 
   // Load chat rooms
   useEffect(() => {
@@ -84,110 +77,25 @@ export default function MessagesPage() {
   const loadChatRooms = async () => {
     if (!user) {
       console.log("No user found, cannot load chat rooms");
-      setDebugInfo("No user logged in");
       setIsLoading(false);
       return;
     }
 
     try {
       setIsLoading(true);
-      setDebugInfo(`Loading chats for user: ${user.uid}...`);
-      setDiagnosticResults([]);
       console.log("Loading chat rooms for user:", user.uid, user.email);
-      
-      // Run comprehensive diagnostics first
-      const diagnostics = await runComprehensiveDiagnostics(user.uid);
-      setDiagnosticResults(diagnostics);
       
       const rooms = await getChatRoomsByUserId(user.uid);
       console.log("Loaded chat rooms:", rooms);
       setChatRooms(rooms);
-      setDebugInfo(`Found ${rooms.length} chat room(s)`);
       if (rooms.length > 0 && !selectedRoom) {
         setSelectedRoom(rooms[0].chatRoomId);
       }
     } catch (error: any) {
       console.error("Error loading chat rooms:", error);
-      setDebugInfo(`Error: ${error.message || error}`);
     } finally {
       setIsLoading(false);
     }
-  };
-  
-  const runComprehensiveDiagnostics = async (userId: string): Promise<string[]> => {
-    const results: string[] = [];
-    const { db } = await import("@/lib/firebase/config");
-    const { collection, getDocs, query, limit, collectionGroup } = await import("firebase/firestore");
-    
-    results.push(`=== Comprehensive Firebase Diagnostics ===`);
-    results.push(`User ID: ${userId}`);
-    results.push(`Project ID: ${projectId}`);
-    results.push(``);
-    
-    // Check all possible top-level collections
-    const topLevelCollections = ["chat_rooms", "chats", "chatRooms", "conversations", "messages", "chatrooms"];
-    for (const colName of topLevelCollections) {
-      try {
-        const ref = collection(db, colName);
-        const snapshot = await getDocs(query(ref, limit(10)));
-        results.push(`Collection "${colName}": ${snapshot.docs.length} documents`);
-        if (snapshot.docs.length > 0) {
-          const sample = snapshot.docs[0].data();
-          results.push(`  Sample doc ID: ${snapshot.docs[0].id}`);
-          results.push(`  Has participantIds: ${!!sample.participantIds}`);
-          results.push(`  Has participants: ${!!sample.participants}`);
-          results.push(`  Has userIds: ${!!sample.userIds}`);
-          if (sample.participantIds) {
-            results.push(`  participantIds: ${JSON.stringify(sample.participantIds)}`);
-          }
-          if (sample.participants && Array.isArray(sample.participants)) {
-            results.push(`  participants (array): ${sample.participants.length} items`);
-          }
-        }
-      } catch (error: any) {
-        results.push(`Collection "${colName}": Error - ${error.message}`);
-      }
-    }
-    
-    results.push(``);
-    results.push(`=== Checking User Subcollections ===`);
-    
-    // Check user subcollections
-    const userSubcollections = ["chats", "chatRooms", "chat_rooms", "conversations", "messages"];
-    for (const subCol of userSubcollections) {
-      try {
-        const ref = collection(db, "users", userId, subCol);
-        const snapshot = await getDocs(query(ref, limit(10)));
-        results.push(`users/${userId}/${subCol}: ${snapshot.docs.length} documents`);
-      } catch (error: any) {
-        results.push(`users/${userId}/${subCol}: Not found or error`);
-      }
-    }
-    
-    results.push(``);
-    results.push(`=== Checking Collection Groups ===`);
-    
-    // Check collection groups
-    const collectionGroups = ["chats", "messages", "chatRooms"];
-    for (const groupName of collectionGroups) {
-      try {
-        const groupRef = collectionGroup(db, groupName);
-        const snapshot = await getDocs(query(groupRef, limit(10)));
-        results.push(`Collection group "${groupName}": ${snapshot.docs.length} documents`);
-        if (snapshot.docs.length > 0) {
-          const userDocs = snapshot.docs.filter(doc => {
-            const data = doc.data();
-            const ids = data.participantIds || data.participants || data.userIds || [];
-            return Array.isArray(ids) && ids.includes(userId);
-          });
-          results.push(`  Documents with user ${userId}: ${userDocs.length}`);
-        }
-      } catch (error: any) {
-        results.push(`Collection group "${groupName}": Error - ${error.message}`);
-      }
-    }
-    
-    return results;
   };
 
   const loadMessages = async () => {
@@ -240,12 +148,6 @@ export default function MessagesPage() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Messages</h1>
-        {user && (
-          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 space-y-1">
-            <p>Firebase Project: <span className="font-mono">{projectId}</span></p>
-            <p>User ID: <span className="font-mono">{user.uid}</span></p>
-          </div>
-        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
@@ -257,44 +159,11 @@ export default function MessagesPage() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
               </div>
             ) : chatRooms.length === 0 ? (
-              <div className="p-4 text-gray-500 dark:text-gray-400">
-                <p className="mb-2 text-center">No conversations</p>
-                {debugInfo && (
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 text-center">
-                    {debugInfo}
-                  </p>
-                )}
-                {user && (
-                  <div className="mt-4 space-y-2">
-                    <button
-                      onClick={() => {
-                        loadChatRooms();
-                      }}
-                      className="w-full px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600"
-                    >
-                      Refresh
-                    </button>
-                    <button
-                      onClick={() => {
-                        diagnoseFirebaseCollections(user.uid).then(() => {
-                          loadChatRooms();
-                        });
-                      }}
-                      className="w-full px-4 py-2 bg-gray-500 text-white rounded-lg text-sm hover:bg-gray-600"
-                    >
-                      Run Diagnostics
-                    </button>
-                    {diagnosticResults.length > 0 && (
-                      <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded text-xs font-mono max-h-64 overflow-y-auto">
-                        {diagnosticResults.map((line, idx) => (
-                          <div key={idx} className="mb-1 text-gray-700 dark:text-gray-300">
-                            {line}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+              <div className="p-8 text-center">
+                <p className="text-gray-500 dark:text-gray-400 font-medium">No conversations yet</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                  Start a conversation from a task or profile
+                </p>
               </div>
             ) : (
               chatRooms.map((room) => (

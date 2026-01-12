@@ -89,21 +89,35 @@ function extractParticipantIds(data: any): string[] {
     if (typeof value === "string") return value;
     if (typeof value === "number") return String(value);
     if (typeof value === "object") {
-      // Common shapes: { id }, { uid }, { userId }, Firebase DocumentReference (has .id)
+      // Firebase DocumentReference has .id property
+      if (value.id && typeof value.id === "string") {
+        return value.id;
+      }
+      
+      // Common object shapes: { id }, { uid }, { userId }, etc.
       const candidate =
         value.id ||
         value.uid ||
         value.userId ||
         value.userID ||
         value.user_id ||
-        value._id;
+        value._id ||
+        value.odiumId; // Some apps use this
       if (typeof candidate === "string" && candidate.length > 0) return candidate;
 
-      // Sometimes a DocumentReference-like shape
+      // Sometimes a DocumentReference-like shape with path
       if (typeof value.path === "string") {
         const parts = value.path.split("/");
         const last = parts[parts.length - 1];
-        if (last) return last;
+        if (last && last.length > 0) return last;
+      }
+
+      // Try toString if it's a special object type
+      if (typeof value.toString === "function" && value.toString !== Object.prototype.toString) {
+        const str = value.toString();
+        if (str && str.length > 0 && str !== "[object Object]") {
+          return str;
+        }
       }
 
       return null;
@@ -309,9 +323,11 @@ export async function getChatRoomsByUserId(
             `  "${collectionName}" with participants query: ${snapshot.docs.length} docs`
           );
         } catch {
-          // Query failed, try fetching a small sample and filtering client-side
-          console.log(`  "${collectionName}" query failed, fetching sample...`);
-          snapshot = await getDocs(query(chatRoomsRef, limit(50)));
+          // Query failed (likely because participants is array of objects)
+          // Fetch ALL documents and filter client-side
+          console.log(`  "${collectionName}" query failed (participants may be objects), fetching all...`);
+          snapshot = await getDocs(chatRoomsRef);
+          console.log(`  Fetched ${snapshot.docs.length} total documents, will filter client-side`);
         }
       }
 
@@ -321,6 +337,15 @@ export async function getChatRoomsByUserId(
 
         const data = docSnap.data();
         const participantIds = extractParticipantIds(data);
+
+        // Debug logging for first room
+        if (allRooms.length === 0 && processedIds.size === 0) {
+          console.log(`[DEBUG] First room check - Room ID: ${docSnap.id}`);
+          console.log(`[DEBUG] Raw participants field:`, data.participants);
+          console.log(`[DEBUG] Extracted participant IDs:`, participantIds);
+          console.log(`[DEBUG] Looking for user ID:`, userId);
+          console.log(`[DEBUG] User in participants:`, participantIds.includes(userId));
+        }
 
         // Check if user is a participant
         if (!participantIds.includes(userId)) {

@@ -10,7 +10,6 @@ import {
   sendMessage,
   subscribeToMessages,
   subscribeToChatRooms,
-  diagnoseFirebaseCollections,
 } from "@/lib/firebase/messages";
 import { Send, RefreshCw, AlertCircle, MessageSquare } from "lucide-react";
 import Link from "next/link";
@@ -24,7 +23,6 @@ export default function MessagesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Refs to track subscription state
@@ -158,18 +156,6 @@ export default function MessagesPage() {
     }
   };
 
-  const handleDiagnose = async () => {
-    if (!user) return;
-    
-    try {
-      setDebugInfo("Running diagnostics...");
-      const result = await diagnoseFirebaseCollections(user.uid);
-      setDebugInfo(JSON.stringify(result, null, 2));
-    } catch (err: any) {
-      setDebugInfo(`Diagnostic error: ${err.message}`);
-    }
-  };
-
   const formatTime = (timestamp: string) => {
     try {
       const date = new Date(timestamp);
@@ -257,42 +243,14 @@ export default function MessagesPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Messages</h1>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={loadChatRooms}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw className={cn("h-5 w-5", isLoading && "animate-spin")} />
-          </button>
-          {process.env.NODE_ENV === "development" && (
-            <button
-              onClick={handleDiagnose}
-              className="px-3 py-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded"
-            >
-              Debug
-            </button>
-          )}
-        </div>
+        <button
+          onClick={loadChatRooms}
+          className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          title="Refresh"
+        >
+          <RefreshCw className={cn("h-5 w-5", isLoading && "animate-spin")} />
+        </button>
       </div>
-
-      {/* Debug Info */}
-      {debugInfo && (
-        <div className="mb-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Debug Info</span>
-            <button
-              onClick={() => setDebugInfo(null)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ×
-            </button>
-          </div>
-          <pre className="text-xs text-gray-600 dark:text-gray-400 overflow-auto max-h-40">
-            {debugInfo}
-          </pre>
-        </div>
-      )}
 
       {/* Error Message */}
       {error && (
