@@ -1,41 +1,36 @@
 import { NextResponse } from "next/server";
-import { getChatRoomsByUserId, chatRooms } from "@/lib/mock-data/messages";
-import { getUserById } from "@/lib/mock-data/users";
+import {
+  getChatRoomsByUserId,
+  getMessagesByChatRoomId,
+} from "@/lib/firebase/messages";
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get("userId");
-  const chatRoomId = searchParams.get("chatRoomId");
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+    const chatRoomId = searchParams.get("chatRoomId");
 
-  if (chatRoomId) {
-    // Return messages for specific chat room
-    const { getMessagesByChatRoomId } = await import("@/lib/mock-data/messages");
-    const messages = getMessagesByChatRoomId(chatRoomId);
-    return NextResponse.json(messages);
+    if (chatRoomId) {
+      // Return messages for specific chat room
+      const messages = await getMessagesByChatRoomId(chatRoomId);
+      return NextResponse.json(messages);
+    }
+
+    if (userId) {
+      // Return chat rooms for user
+      const userRooms = await getChatRoomsByUserId(userId);
+      return NextResponse.json(userRooms);
+    }
+
+    return NextResponse.json(
+      { error: "Missing userId or chatRoomId parameter" },
+      { status: 400 }
+    );
+  } catch (error: any) {
+    console.error("API Error:", error);
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 500 }
+    );
   }
-
-  if (userId) {
-    // Return chat rooms for user
-    const userRooms = getChatRoomsByUserId(userId);
-    
-    // Enrich with participant data
-    const enrichedRooms = userRooms.map((room) => {
-      const otherParticipantId = room.participantIds.find((id) => id !== userId);
-      const otherParticipant = otherParticipantId ? getUserById(otherParticipantId) : undefined;
-
-      return {
-        ...room,
-        otherParticipant: otherParticipant ? {
-          id: otherParticipant.id,
-          fullName: otherParticipant.fullName || "Unknown",
-          photoUrl: otherParticipant.photoUrl,
-        } : undefined,
-      };
-    });
-
-    return NextResponse.json(enrichedRooms);
-  }
-
-  return NextResponse.json(chatRooms);
 }
-
