@@ -6,6 +6,7 @@ import {
   updateProfile,
   onAuthStateChanged,
   GoogleAuthProvider,
+  OAuthProvider,
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
@@ -22,6 +23,11 @@ googleProvider.addScope('email');
 googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
+
+// Apple Auth Provider
+const appleProvider = new OAuthProvider('apple.com');
+appleProvider.addScope('email');
+appleProvider.addScope('name');
 
 export interface UserData {
   uid: string;
@@ -82,6 +88,105 @@ export async function signInWithGoogle(): Promise<UserCredential> {
   }
   
   return userCredential;
+}
+
+// Sign in with Apple
+export async function signInWithApple(): Promise<UserCredential> {
+  // Apple sign-in uses redirect flow on web
+  // For better UX, we'll use popup if available, otherwise redirect
+  let userCredential: UserCredential;
+  
+  try {
+    // Try popup first (works on Safari and some browsers)
+    userCredential = await signInWithPopup(auth, appleProvider);
+  } catch (error: any) {
+    // If popup fails (e.g., blocked or not supported), use redirect
+    if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user' || error.code === 'auth/operation-not-allowed') {
+      // Use redirect flow
+      await signInWithRedirect(auth, appleProvider);
+      // This will redirect the page, so we won't reach here
+      throw new Error('Redirecting to Apple sign-in...');
+    }
+    throw error;
+  }
+  
+  // Check if user already exists in Firestore
+  const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
+  
+  // Extract name from Apple credential if available
+  let fullName = userCredential.user.displayName;
+  if (!fullName && (userCredential as any).additionalUserInfo?.profile) {
+    const profile = (userCredential as any).additionalUserInfo.profile;
+    if (profile.name) {
+      fullName = `${profile.name.firstName || ''} ${profile.name.lastName || ''}`.trim();
+    }
+  }
+  
+  // If user doesn't exist, create their profile
+  if (!userDoc.exists()) {
+    await setDoc(doc(db, "users", userCredential.user.uid), {
+      uid: userCredential.user.uid,
+      email: userCredential.user.email,
+      fullName: fullName || userCredential.user.email?.split('@')[0] || 'Apple User',
+      role: "client", // Default role for Apple sign-in users
+      createdAt: new Date(),
+      photoURL: userCredential.user.photoURL,
+    });
+    
+    // Update display name if we have it
+    if (fullName) {
+      await updateProfile(userCredential.user, {
+        displayName: fullName,
+      });
+    }
+  }
+  
+  return userCredential;
+}
+
+// Handle Apple redirect result (call this on page load after redirect)
+export async function handleAppleRedirect(): Promise<UserCredential | null> {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result) {
+      // Check if user already exists in Firestore
+      const userDoc = await getDoc(doc(db, "users", result.user.uid));
+      
+      // Extract name from Apple credential if available
+      let fullName = result.user.displayName;
+      if (!fullName && (result as any).additionalUserInfo?.profile) {
+        const profile = (result as any).additionalUserInfo.profile;
+        if (profile.name) {
+          fullName = `${profile.name.firstName || ''} ${profile.name.lastName || ''}`.trim();
+        }
+      }
+      
+      // If user doesn't exist, create their profile
+      if (!userDoc.exists()) {
+        await setDoc(doc(db, "users", result.user.uid), {
+          uid: result.user.uid,
+          email: result.user.email,
+          fullName: fullName || result.user.email?.split('@')[0] || 'Apple User',
+          role: "client",
+          createdAt: new Date(),
+          photoURL: result.user.photoURL,
+        });
+        
+        // Update display name if we have it
+        if (fullName) {
+          await updateProfile(result.user, {
+            displayName: fullName,
+          });
+        }
+      }
+      
+      return result;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error handling Apple redirect:', error);
+    return null;
+  }
 }
 
 // Sign out

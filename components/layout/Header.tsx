@@ -27,7 +27,7 @@ export const Header: React.FC = () => {
 
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-theme-accent2 bg-theme-primaryBackground">
+    <header className="sticky top-0 z-50 w-full border-b border-theme-accent2 dark:border-darkBlue-203 bg-theme-primaryBackground dark:bg-darkBlue-003">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
@@ -46,25 +46,25 @@ export const Header: React.FC = () => {
           <nav className="hidden md:flex items-center space-x-6">
             <Link
               href="/categories"
-              className="text-sm font-medium text-theme-primaryText hover:text-primary-500 transition-colors"
+              className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
             >
               Categories
             </Link>
             <Link
               href="/how-it-works"
-              className="text-sm font-medium text-theme-primaryText hover:text-primary-500 transition-colors"
+              className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
             >
               How It Works
             </Link>
             <Link
               href="/pricing"
-              className="text-sm font-medium text-theme-primaryText hover:text-primary-500 transition-colors"
+              className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
             >
               Pricing
             </Link>
             <Link
               href="/about"
-              className="text-sm font-medium text-theme-primaryText hover:text-primary-500 transition-colors"
+              className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
             >
               About
             </Link>
@@ -73,11 +73,11 @@ export const Header: React.FC = () => {
           {/* Search Bar - Desktop */}
           <div className="hidden lg:flex items-center space-x-4 flex-1 max-w-md mx-8">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-theme-accent4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-theme-accent4 dark:text-gray-400" />
               <input
                 type="text"
                 placeholder="Search tasks..."
-                className="w-full pl-10 pr-4 py-2 border border-theme-accent2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-theme-primaryBackground text-theme-primaryText"
+                className="w-full pl-10 pr-4 py-2 border border-theme-accent2 dark:border-darkBlue-203 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-theme-primaryBackground dark:bg-darkBlue-203 text-theme-primaryText dark:text-white placeholder:text-theme-accent4 dark:placeholder:text-gray-400"
               />
             </div>
           </div>
@@ -99,7 +99,7 @@ export const Header: React.FC = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 rounded-lg hover:bg-theme-accent2 text-theme-primaryText"
+            className="md:hidden p-2 rounded-lg hover:bg-theme-accent2 dark:hover:bg-darkBlue-203 text-theme-primaryText dark:text-white"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Toggle menu"
             aria-expanded={isMenuOpen}
@@ -114,37 +114,37 @@ export const Header: React.FC = () => {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-theme-accent2">
+          <div className="md:hidden py-4 border-t border-theme-accent2 dark:border-darkBlue-203">
             <nav className="flex flex-col space-y-4">
               <Link
                 href="/categories"
-                className="text-sm font-medium text-theme-primaryText hover:text-primary-500"
+                className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Categories
               </Link>
               <Link
                 href="/how-it-works"
-                className="text-sm font-medium text-theme-primaryText hover:text-primary-500"
+                className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400"
                 onClick={() => setIsMenuOpen(false)}
               >
                 How It Works
               </Link>
               <Link
                 href="/pricing"
-                className="text-sm font-medium text-theme-primaryText hover:text-primary-500"
+                className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Pricing
               </Link>
               <Link
                 href="/about"
-                className="text-sm font-medium text-theme-primaryText hover:text-primary-500"
+                className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400"
                 onClick={() => setIsMenuOpen(false)}
               >
                 About
               </Link>
-              <div className="pt-4 border-t border-theme-accent2 space-y-2">
+              <div className="pt-4 border-t border-theme-accent2 dark:border-darkBlue-203 space-y-2">
                 <div className="pb-2">
                   <LanguageSwitcher />
                 </div>

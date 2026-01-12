@@ -17,7 +17,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <label
             htmlFor={selectId}
-            className="block text-sm font-medium text-secondary-700 mb-1"
+            className="block text-sm font-medium text-secondary-700 dark:text-white mb-1"
           >
             {label}
             {props.required && <span className="text-red-500 ml-1">*</span>}
@@ -27,8 +27,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={selectId}
           className={cn(
-            "flex h-10 w-full rounded-lg border border-secondary-300 bg-white px-3 py-2 text-sm",
-            "ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
+            "flex h-10 w-full rounded-lg border border-secondary-300 dark:border-gray-600 bg-white dark:bg-darkBlue-003 px-3 py-2 text-sm text-theme-primaryText dark:text-white",
+            "ring-offset-white dark:ring-offset-darkBlue-003 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
             "disabled:cursor-not-allowed disabled:opacity-50",
             error && "border-red-500 focus-visible:ring-red-500",
             className
@@ -44,12 +44,12 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ))}
         </select>
         {error && (
-          <p id={`${selectId}-error`} className="mt-1 text-sm text-red-600" role="alert">
+          <p id={`${selectId}-error`} className="mt-1 text-sm text-red-600 dark:text-red-300" role="alert">
             {error}
           </p>
         )}
         {helperText && !error && (
-          <p id={`${selectId}-helper`} className="mt-1 text-sm text-secondary-500">
+          <p id={`${selectId}-helper`} className="mt-1 text-sm text-secondary-500 dark:text-gray-300">
             {helperText}
           </p>
         )}
