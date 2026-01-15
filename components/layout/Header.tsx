@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Menu, X, Search, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/firebase/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useTheme } from "@/lib/contexts/ThemeContext";
 
@@ -14,15 +14,22 @@ export const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const { theme } = useTheme();
 
   // Don't show header if user is authenticated (dashboard header will show instead)
+  // Also hide on dashboard routes
   if (loading) {
-    return null; // Or a loading state
+    return null;
   }
 
   if (user) {
     return null; // Hide header after login
+  }
+
+  // Hide header on dashboard routes
+  if (pathname?.startsWith('/dashboard') || pathname?.startsWith('/client-home') || pathname?.startsWith('/provider-dashboard')) {
+    return null;
   }
 
 

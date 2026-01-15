@@ -13,7 +13,7 @@ import {
   User,
   UserCredential,
 } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "./config";
 
 // Google Auth Provider
@@ -33,8 +33,10 @@ export interface UserData {
   uid: string;
   email: string | null;
   fullName: string | null;
-  role: "client" | "provider";
+  role: "client" | "provider" | "both";
+  currentRole?: "client" | "provider" | "both";
   createdAt: Date;
+  updatedAt?: Date;
 }
 
 // Sign up with email and password
@@ -57,6 +59,7 @@ export async function signUp(
     email: email,
     fullName: fullName,
     role: role,
+    currentRole: role,
     createdAt: new Date(),
   });
 
@@ -82,6 +85,7 @@ export async function signInWithGoogle(): Promise<UserCredential> {
       email: userCredential.user.email,
       fullName: userCredential.user.displayName,
       role: "client", // Default role for Google sign-in users
+      currentRole: "client",
       createdAt: new Date(),
       photoURL: userCredential.user.photoURL,
     });
@@ -129,6 +133,7 @@ export async function signInWithApple(): Promise<UserCredential> {
       email: userCredential.user.email,
       fullName: fullName || userCredential.user.email?.split('@')[0] || 'Apple User',
       role: "client", // Default role for Apple sign-in users
+      currentRole: "client",
       createdAt: new Date(),
       photoURL: userCredential.user.photoURL,
     });
@@ -168,6 +173,7 @@ export async function handleAppleRedirect(): Promise<UserCredential | null> {
           email: result.user.email,
           fullName: fullName || result.user.email?.split('@')[0] || 'Apple User',
           role: "client",
+          currentRole: "client",
           createdAt: new Date(),
           photoURL: result.user.photoURL,
         });
@@ -227,3 +233,32 @@ export function setAuthCookie(user: User) {
   });
 }
 
+// Switch user role (client/provider)
+export async function switchUserRole(
+  userId: string,
+  newRole: "client" | "provider"
+): Promise<void> {
+  try {
+    const userRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      throw new Error("User document not found");
+    }
+    
+    const currentData = userDoc.data();
+    const currentRole = currentData.role;
+    
+    // Update role and currentRole
+    await updateDoc(userRef, {
+      role: currentRole === "both" ? "both" : newRole, // Keep "both" if already set, otherwise set to new role
+      currentRole: newRole,
+      updatedAt: new Date(),
+    });
+    
+    console.log(`User role switched to: ${newRole}`);
+  } catch (error) {
+    console.error("Error switching user role:", error);
+    throw error;
+  }
+}

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  Home,
   PlusCircle,
   Search,
   FileText,
@@ -34,6 +35,7 @@ import { DashboardHeader } from "./DashboardHeader";
 import { useTheme } from "@/lib/contexts/ThemeContext";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/firebase/AuthContext";
+import { switchUserRole } from "@/lib/firebase/auth";
 
 interface NavItem {
   name: string;
@@ -41,7 +43,7 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-// Desktop navigation items
+// Desktop navigation items (provider view)
 const desktopNavItems: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Explore", href: "/explore", icon: Compass },
@@ -49,6 +51,18 @@ const desktopNavItems: NavItem[] = [
   { name: "My Tasks", href: "/dashboard/my-tasks", icon: CheckSquare },
   { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
   { name: "Profile", href: "/dashboard/profile", icon: User },
+  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  { name: "Chat Zing", href: "/dashboard/chatzing-ai", icon: MessageCircle },
+];
+
+// Desktop navigation items (client view)
+const clientDesktopNavItems: NavItem[] = [
+  { name: "Home", href: "/client-home", icon: Home },
+  { name: "Explore", href: "/client-explore", icon: Compass },
+  { name: "Post a Job", href: "/post-task", icon: PlusCircle },
+  { name: "All Jobs", href: "/all-jobs", icon: Briefcase },
+  { name: "Messages", href: "/messages", icon: MessageSquare },
+  { name: "Profile", href: "/my-profile", icon: User },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
   { name: "Chat Zing", href: "/dashboard/chatzing-ai", icon: MessageCircle },
 ];
@@ -70,13 +84,55 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
+  const [isSwitching, setIsSwitching] = useState(false);
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const { user, userData } = useAuth();
+  const currentRole = userData?.currentRole || userData?.role || "provider";
+  const desktopItems = currentRole === "client" ? clientDesktopNavItems : desktopNavItems;
   
   const userName = user?.displayName || userData?.fullName || user?.email?.split("@")[0] || "U";
   const userInitial = userName.charAt(0).toUpperCase();
+
+  const handleSwitchToClient = async () => {
+    if (!user) {
+      alert("Please log in to switch roles.");
+      return;
+    }
+    
+    setIsSwitching(true);
+    try {
+      // Switch the role in Firestore (only updates currentRole, keeps role as Provider)
+      await switchUserRole(user.uid, "client");
+      
+      // Wait a moment for Firestore to update
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Navigate to client home (matches Flutter app behavior)
+      router.push("/client-home");
+      
+      // Force a page reload to refresh auth context and user data
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    } catch (error: any) {
+      console.error("Error switching to client:", error);
+      setIsSwitching(false);
+      
+      // Provide user-friendly error messages
+      let errorMessage = "Failed to switch role. Please try again.";
+      if (error?.code === 'permission-denied') {
+        errorMessage = "You don't have permission to update your role. Please contact support.";
+      } else if (error?.code === 'unavailable') {
+        errorMessage = "Network error. Please check your internet connection and try again.";
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[var(--app-bg)]">
@@ -90,7 +146,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({
           isSidebarCollapsed ? "lg:w-20" : "lg:w-64"
         )}>
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-            {desktopNavItems.map((item) => {
+            {desktopItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
               return (
@@ -247,14 +303,14 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({
             <div className="p-4 border-t border-theme-accent2 dark:border-gray-700">
               <button
                 onClick={() => {
-                  // TODO: Implement role switching
-                  router.push("/client-home");
+                  handleSwitchToClient();
                   setIsMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-sm font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors"
+                disabled={isSwitching}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-sm font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ArrowLeftRight className="h-5 w-5" />
-                <span>Switch to Client</span>
+                <span>{isSwitching ? "Switching..." : "Switch to Client"}</span>
               </button>
             </div>
           </aside>
@@ -422,16 +478,19 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({
               {/* Switch Role - Right side, lower on the arc */}
               <button
                 onClick={() => {
-                  router.push("/client-home");
+                  handleSwitchToClient();
                   setIsPlusMenuOpen(false);
                 }}
-                className="absolute flex flex-col items-center"
+                disabled={isSwitching}
+                className="absolute flex flex-col items-center disabled:opacity-50"
                 style={{ right: '5%', bottom: '68px' }}
               >
                 <div className="w-11 h-11 rounded-full bg-primary-500 flex items-center justify-center shadow-lg">
                   <Users className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">Switch Role</span>
+                <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">
+                  {isSwitching ? "Switching..." : "Switch Role"}
+                </span>
               </button>
               
               {/* Close Button - Bottom center */}

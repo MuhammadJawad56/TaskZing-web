@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Bell, Send, Video, Star, Menu, MessageSquare } from "lucide-react";
@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/firebase/AuthContext";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 import { useTheme } from "@/lib/contexts/ThemeContext";
+import { switchUserRole } from "@/lib/firebase/auth";
 
 interface DashboardHeaderProps {
   onMenuToggle?: () => void;
@@ -18,9 +19,53 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle }
   const { user, userData } = useAuth();
   const router = useRouter();
   const { theme } = useTheme();
+  const [isSwitching, setIsSwitching] = useState(false);
+  const currentRole = userData?.currentRole || userData?.role || "provider";
+  const switchTarget = currentRole === "client" ? "provider" : "client";
 
   const userName = user?.displayName || userData?.fullName || user?.email?.split("@")[0] || "U";
   const userInitial = userName.charAt(0).toUpperCase();
+
+  const handleSwitchRole = async () => {
+    if (!user) {
+      alert("Please log in to switch roles.");
+      return;
+    }
+    
+    setIsSwitching(true);
+    try {
+      // Switch the role in Firestore (only updates currentRole)
+      await switchUserRole(user.uid, switchTarget);
+      
+      // Wait a moment for Firestore to update
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Navigate based on new role (matches Flutter app behavior)
+      router.push(switchTarget === "client" ? "/client-home" : "/dashboard");
+      
+      // Force a page reload to refresh auth context and user data
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    } catch (error: any) {
+      console.error("Error switching to client:", error);
+      setIsSwitching(false);
+      
+      // Provide user-friendly error messages
+      let errorMessage = "Failed to switch role. Please try again.";
+      if (error?.code === 'permission-denied') {
+        errorMessage = "You don't have permission to update your role. Please contact support.";
+      } else if (error?.code === 'unavailable') {
+        errorMessage = "Network error. Please check your internet connection and try again.";
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
+    } finally {
+      setIsSwitching(false);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-theme-accent2 bg-[var(--app-surface)] dark:border-gray-700 shadow-sm">
@@ -44,13 +89,12 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle }
             <Button
               variant="primary"
               size="sm"
-              onClick={() => {
-                // TODO: Implement role switching
-                router.push("/client-home");
-              }}
+              onClick={handleSwitchRole}
+              disabled={isSwitching}
+              isLoading={isSwitching}
               className="hidden lg:flex rounded-lg"
             >
-              Switch to Client
+              {isSwitching ? "Switching..." : `Switch to ${switchTarget === "client" ? "Client" : "Provider"}`}
             </Button>
 
             {/* Icons - Always visible */}
