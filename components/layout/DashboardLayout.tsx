@@ -110,7 +110,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
       // Wait a moment for Firestore to update
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Navigate to client home (matches Flutter app behavior)
+      // Always redirect to client-home first when switching to client role
       router.push("/client-home");
       
       // Force a page reload to refresh auth context and user data

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -41,15 +41,22 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
       // Wait a moment for Firestore to update
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Navigate based on new role (matches Flutter app behavior)
-      router.push(switchTarget === "client" ? "/client-home" : "/dashboard");
-      
-      // Force a page reload to refresh auth context and user data
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
+      // Navigate based on new role - always redirect to client-home first when switching to client
+      if (switchTarget === "client") {
+        router.push("/client-home");
+        // Force a page reload to refresh auth context and user data
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
+      } else {
+        router.push("/dashboard");
+        // Force a page reload to refresh auth context and user data
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
+      }
     } catch (error: any) {
-      console.error("Error switching to client:", error);
+      console.error("Error switching role:", error);
       setIsSwitching(false);
       
       // Provide user-friendly error messages

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { User } from "firebase/auth";
+import { useRouter, usePathname } from "next/navigation";
 import { onAuthChange, getUserData, UserData, signOut } from "./auth";
 
 interface AuthContextType {
@@ -23,6 +24,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const initializedRef = useRef(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const previousRoleRef = useRef<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -87,6 +91,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(timeout);
     };
   }, []);
+
+  // Redirect to client-home when role switches to client
+  useEffect(() => {
+    // Only run in browser environment
+    if (typeof window === "undefined") return;
+    if (loading || !user || !userData) return;
+
+    const currentRole = userData?.currentRole || userData?.role || "provider";
+    const previousRole = previousRoleRef.current;
+
+    // Check if role just switched to client (from provider or other role)
+    if (currentRole === "client" && previousRole !== "client" && previousRole !== null) {
+      // Always redirect to client-home when role switches to client
+      // This ensures the first page after role switch is always the homepage
+      router.push("/client-home");
+    }
+
+    // Update previous role
+    previousRoleRef.current = currentRole;
+  }, [user, userData, loading, pathname, router]);
 
   const logout = async () => {
     try {
