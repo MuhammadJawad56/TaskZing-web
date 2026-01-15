@@ -354,9 +354,13 @@ export default function ShowcasePage() {
     if (!confirm("Are you sure you want to delete this showcase item?")) {
       return;
     }
+    if (!user?.uid) {
+      alert("Please log in to delete a showcase item.");
+      return;
+    }
 
     try {
-      await deleteShowcaseItem(id, imageUrls, videoUrl);
+      await deleteShowcaseItem(id, imageUrls, videoUrl, user.uid);
       await loadShowcases();
       alert("Showcase item deleted successfully!");
     } catch (error: any) {

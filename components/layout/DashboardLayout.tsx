@@ -78,8 +78,9 @@ const mobileNavItems: NavItem[] = [
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({
+export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: () => void }> = ({
   children,
+  onQRClick,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -137,7 +138,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({
   return (
     <div className="min-h-screen bg-[var(--app-bg)]">
       {/* Dashboard Header */}
-      <DashboardHeader onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+      <DashboardHeader onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} onQRClick={onQRClick} />
 
       <div className="flex bg-[var(--app-bg)]">
         {/* Sidebar - Desktop */}

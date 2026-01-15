@@ -10,9 +10,19 @@ import {
   orderBy,
   Timestamp,
   getDoc,
+  collectionGroup,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage } from "./config";
+
+// Helper function to safely convert Firestore Timestamp or other date formats to Date
+function toDate(value: any): Date {
+  if (!value) return new Date();
+  if (value instanceof Date) return value;
+  if (typeof value.toDate === "function") return value.toDate();
+  if (typeof value === "string" || typeof value === "number") return new Date(value);
+  return new Date();
+}
 
 export interface ShowcaseItem {
   id?: string;
@@ -118,51 +128,60 @@ export async function createShowcaseItem(
     updatedAt: Timestamp.now(),
   };
 
-  const docRef = await addDoc(collection(db, "showcases"), showcaseData);
+  const docRef = await addDoc(collection(db, "showcase_work", userId, "submissions"), showcaseData);
   return docRef.id;
 }
 
 // Get all showcase items for a user
 export async function getUserShowcases(userId: string): Promise<ShowcaseItem[]> {
   const q = query(
-    collection(db, "showcases"),
-    where("userId", "==", userId),
+    collection(db, "showcase_work", userId, "submissions"),
     orderBy("createdAt", "desc")
   );
 
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-    createdAt: doc.data().createdAt?.toDate() || new Date(),
-    updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-  })) as ShowcaseItem[];
+  return querySnapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      createdAt: toDate(data.createdAt),
+      updatedAt: toDate(data.updatedAt),
+    } as ShowcaseItem;
+  });
 }
 
 // Get all showcase items (for public view)
 export async function getAllShowcases(): Promise<ShowcaseItem[]> {
-  const q = query(collection(db, "showcases"), orderBy("createdAt", "desc"));
-
+  // Avoid collectionGroup orderBy to prevent index requirement; sort locally instead.
+  const q = query(collectionGroup(db, "submissions"));
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-    createdAt: doc.data().createdAt?.toDate() || new Date(),
-    updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-  })) as ShowcaseItem[];
+  const items = querySnapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      createdAt: toDate(data.createdAt),
+      updatedAt: toDate(data.updatedAt),
+    } as ShowcaseItem;
+  });
+  return items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 // Get a single showcase item by ID
-export async function getShowcaseItem(id: string): Promise<ShowcaseItem | null> {
-  const docRef = doc(db, "showcases", id);
+export async function getShowcaseItem(id: string, userId?: string): Promise<ShowcaseItem | null> {
+  const docRef = userId
+    ? doc(db, "showcase_work", userId, "submissions", id)
+    : doc(db, "showcase_work", id);
   const docSnap = await getDoc(docRef);
 
   if (docSnap.exists()) {
+    const data = docSnap.data();
     return {
       id: docSnap.id,
-      ...docSnap.data(),
-      createdAt: docSnap.data().createdAt?.toDate() || new Date(),
-      updatedAt: docSnap.data().updatedAt?.toDate() || new Date(),
+      ...data,
+      createdAt: toDate(data.createdAt),
+      updatedAt: toDate(data.updatedAt),
     } as ShowcaseItem;
   }
   return null;
@@ -171,9 +190,12 @@ export async function getShowcaseItem(id: string): Promise<ShowcaseItem | null> 
 // Update a showcase item
 export async function updateShowcaseItem(
   id: string,
-  data: Partial<Omit<ShowcaseItem, "id" | "userId" | "createdAt">>
+  data: Partial<Omit<ShowcaseItem, "id" | "userId" | "createdAt">>,
+  userId?: string
 ): Promise<void> {
-  const docRef = doc(db, "showcases", id);
+  const docRef = userId
+    ? doc(db, "showcase_work", userId, "submissions", id)
+    : doc(db, "showcase_work", id);
   await updateDoc(docRef, {
     ...data,
     updatedAt: Timestamp.now(),
@@ -181,7 +203,12 @@ export async function updateShowcaseItem(
 }
 
 // Delete a showcase item
-export async function deleteShowcaseItem(id: string, imageUrls?: string[], videoUrl?: string): Promise<void> {
+export async function deleteShowcaseItem(
+  id: string,
+  imageUrls?: string[],
+  videoUrl?: string,
+  userId?: string
+): Promise<void> {
   // Delete images from storage if provided
   if (imageUrls && imageUrls.length > 0) {
     await Promise.all(imageUrls.map((url) => deleteShowcaseImage(url)));
@@ -193,7 +220,72 @@ export async function deleteShowcaseItem(id: string, imageUrls?: string[], video
   }
 
   // Delete document from Firestore
-  const docRef = doc(db, "showcases", id);
+  const docRef = userId
+    ? doc(db, "showcase_work", userId, "submissions", id)
+    : doc(db, "showcase_work", id);
   await deleteDoc(docRef);
+}
+
+// Bookmark/Unbookmark showcase functions
+export async function bookmarkShowcase(
+  userId: string,
+  showcaseId: string,
+  showcaseUserId: string
+): Promise<void> {
+  const bookmarkData = {
+    bookmarkedBy: userId,
+    showcaseId: showcaseId,
+    showcaseUserId: showcaseUserId,
+    createdAt: Timestamp.now(),
+  };
+
+  // Check if already bookmarked
+  const q = query(
+    collection(db, "showcaseWorkBookmarks"),
+    where("bookmarkedBy", "==", userId),
+    where("showcaseId", "==", showcaseId)
+  );
+  const existing = await getDocs(q);
+  
+  if (existing.empty) {
+    await addDoc(collection(db, "showcaseWorkBookmarks"), bookmarkData);
+  }
+}
+
+export async function unbookmarkShowcase(
+  userId: string,
+  showcaseId: string
+): Promise<void> {
+  const q = query(
+    collection(db, "showcaseWorkBookmarks"),
+    where("bookmarkedBy", "==", userId),
+    where("showcaseId", "==", showcaseId)
+  );
+  const snapshot = await getDocs(q);
+  
+  const deletePromises = snapshot.docs.map((doc) => deleteDoc(doc.ref));
+  await Promise.all(deletePromises);
+}
+
+export async function getUserBookmarkedShowcases(userId: string): Promise<string[]> {
+  const q = query(
+    collection(db, "showcaseWorkBookmarks"),
+    where("bookmarkedBy", "==", userId)
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => doc.data().showcaseId);
+}
+
+export async function isShowcaseBookmarked(
+  userId: string,
+  showcaseId: string
+): Promise<boolean> {
+  const q = query(
+    collection(db, "showcaseWorkBookmarks"),
+    where("bookmarkedBy", "==", userId),
+    where("showcaseId", "==", showcaseId)
+  );
+  const snapshot = await getDocs(q);
+  return !snapshot.empty;
 }
 
