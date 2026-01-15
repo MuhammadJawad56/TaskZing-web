@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Bell, Send, Video, Star, Menu, MessageSquare, QrCode } from "lucide-react";
+import { Bell, Send, Video, Star, Menu, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { useRouter } from "next/navigation";
@@ -106,14 +106,6 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
             </Button>
 
             {/* Icons - Always visible */}
-            <button
-              onClick={() => onQRClick?.()}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkBlue-003 transition-colors"
-              aria-label="QR Code"
-            >
-              <QrCode className="h-5 w-5 text-gray-700 dark:text-white" />
-            </button>
-
             <button
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkBlue-003 transition-colors"
               aria-label="Notifications"

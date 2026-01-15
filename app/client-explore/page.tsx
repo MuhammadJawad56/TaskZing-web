@@ -347,13 +347,13 @@ export default function ClientExplorePage() {
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-darkBlue-003 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-darkBlue-003 hover:bg-gray-50 dark:hover:bg-blue-500/10 transition-colors"
       >
-        <span className="font-medium text-gray-700 dark:text-gray-300">{label}</span>
+        <span className="font-medium text-gray-700 dark:text-blue-300">{label}</span>
         {isExpanded ? (
-          <ChevronDown className="h-5 w-5 text-gray-500" />
+          <ChevronDown className="h-5 w-5 text-gray-500 dark:text-blue-300" />
         ) : (
-          <Plus className="h-5 w-5 text-gray-500" />
+          <Plus className="h-5 w-5 text-gray-500 dark:text-blue-300" />
         )}
       </button>
       {isExpanded && (
@@ -376,17 +376,17 @@ export default function ClientExplorePage() {
   }) => (
     <button
       onClick={onSelect}
-      className={cn(
-        "flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-colors",
-        selected
-          ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-          : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-      )}
+        className={cn(
+          "flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm transition-colors",
+          selected
+            ? "bg-red-100 dark:bg-blue-500/30 text-red-600 dark:text-blue-200"
+            : "hover:bg-gray-100 dark:hover:bg-blue-500/10 text-gray-700 dark:text-blue-300"
+        )}
     >
       <div
         className={cn(
           "w-4 h-4 rounded-full border-2 flex items-center justify-center",
-          selected ? "border-red-500 bg-red-500" : "border-gray-300 dark:border-gray-600"
+          selected ? "border-red-500 bg-red-500 dark:border-blue-400 dark:bg-blue-400" : "border-gray-300 dark:border-blue-500/30"
         )}
       >
         {selected && <Check className="h-2.5 w-2.5 text-white" />}
@@ -446,7 +446,7 @@ export default function ClientExplorePage() {
               value={filterLocation}
               onChange={(e) => setFilterLocation(e.target.value)}
               placeholder="Enter city or address"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-darkBlue-003 dark:text-white text-sm"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-blue-500/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-darkBlue-003 dark:text-blue-200 text-sm"
             />
           </FilterOption>
 
@@ -461,7 +461,7 @@ export default function ClientExplorePage() {
               value={filterArea}
               onChange={(e) => setFilterArea(e.target.value)}
               placeholder="Enter area or neighborhood"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-darkBlue-003 dark:text-white text-sm"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-blue-500/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-darkBlue-003 dark:text-blue-200 text-sm"
             />
           </FilterOption>
 
@@ -524,7 +524,7 @@ export default function ClientExplorePage() {
         <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
           <button
             onClick={clearFilters}
-            className="w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            className="w-full py-3 border border-gray-300 dark:border-blue-500/30 text-gray-700 dark:text-blue-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-blue-500/10 transition-colors"
           >
             Clear All
           </button>
@@ -562,7 +562,7 @@ export default function ClientExplorePage() {
                 className={`whitespace-nowrap text-sm font-medium transition-colors pb-1 ${
                   selectedCategory === category
                     ? "text-red-500 border-b-2 border-red-500"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    : "text-gray-600 dark:text-blue-300 hover:text-gray-900 dark:hover:text-blue-200"
                 }`}
               >
                 {category}
@@ -574,7 +574,7 @@ export default function ClientExplorePage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
               showSaved
                 ? "bg-red-500 text-white"
-                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                : "bg-gray-100 dark:bg-blue-500/20 dark:border-blue-500/30 text-gray-700 dark:text-blue-300 hover:bg-gray-200 dark:hover:bg-blue-500/30 border dark:border-blue-500/30"
             }`}
           >
             <Bookmark className={`h-4 w-4 ${showSaved ? "fill-white" : ""}`} />
@@ -586,9 +586,9 @@ export default function ClientExplorePage() {
         <div className="mb-6 flex items-center gap-3 flex-wrap">
           <button
             onClick={() => setIsFilterOpen(true)}
-            className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
+            className="relative p-2 hover:bg-gray-100 dark:hover:bg-blue-500/20 rounded-lg transition-colors flex-shrink-0"
           >
-            <Filter className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+            <Filter className="h-5 w-5 text-gray-700 dark:text-blue-300" />
             {getActiveFiltersCount() > 0 && (
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                 {getActiveFiltersCount()}
@@ -601,7 +601,7 @@ export default function ClientExplorePage() {
             <select
               value={selectedRating}
               onChange={(e) => setSelectedRating(e.target.value)}
-              className="appearance-none px-4 py-2 pr-8 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer"
+              className="appearance-none px-4 py-2 pr-8 rounded-lg bg-gray-100 dark:bg-blue-500/20 dark:border-blue-500/30 text-gray-700 dark:text-blue-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer border dark:border-blue-500/30"
             >
               {ratingOptions.map((option) => (
                 <option key={option} value={option}>
@@ -609,7 +609,7 @@ export default function ClientExplorePage() {
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-blue-300 pointer-events-none" />
           </div>
 
           {/* Sort By Dropdown */}
@@ -617,7 +617,7 @@ export default function ClientExplorePage() {
             <select
               value={selectedSort}
               onChange={(e) => setSelectedSort(e.target.value)}
-              className="appearance-none px-4 py-2 pr-8 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer"
+              className="appearance-none px-4 py-2 pr-8 rounded-lg bg-gray-100 dark:bg-blue-500/20 dark:border-blue-500/30 text-gray-700 dark:text-blue-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer border dark:border-blue-500/30"
             >
               {sortOptions.map((option) => (
                 <option key={option} value={option}>
@@ -625,7 +625,7 @@ export default function ClientExplorePage() {
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-blue-300 pointer-events-none" />
           </div>
 
           {/* Posting Type Dropdown */}
@@ -633,7 +633,7 @@ export default function ClientExplorePage() {
             <select
               value={selectedPostingType}
               onChange={(e) => setSelectedPostingType(e.target.value)}
-              className="appearance-none px-4 py-2 pr-8 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer"
+              className="appearance-none px-4 py-2 pr-8 rounded-lg bg-gray-100 dark:bg-blue-500/20 dark:border-blue-500/30 text-gray-700 dark:text-blue-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer border dark:border-blue-500/30"
             >
               {postingTypeOptions.map((option) => (
                 <option key={option} value={option}>
@@ -641,7 +641,7 @@ export default function ClientExplorePage() {
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-blue-300 pointer-events-none" />
           </div>
         </div>
 

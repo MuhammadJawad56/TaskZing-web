@@ -444,7 +444,7 @@ export default function ClientHomePage() {
             </div>
             <Link
               href="/googlemap"
-              className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-blue-500/20 dark:border-blue-500/30 text-gray-700 dark:text-blue-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-blue-500/30 transition-colors border dark:border-blue-500/30"
             >
               <Map className="h-4 w-4" />
               Map
@@ -454,8 +454,8 @@ export default function ClientHomePage() {
               onClick={() => setShowSavedOnly(!showSavedOnly)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-colors border ${
                 showSavedOnly
-                  ? "bg-primary-500 dark:bg-primary-600 text-white border-primary-600 dark:border-primary-700"
-                  : "bg-white dark:bg-primary-500 text-gray-700 dark:text-white border-gray-300 dark:border-transparent hover:bg-gray-100 dark:hover:bg-primary-600"
+                  ? "bg-red-500 text-white border-red-600"
+                  : "bg-gray-100 dark:bg-blue-500/20 dark:border-blue-500/30 text-gray-700 dark:text-blue-300 border-gray-300 dark:border-blue-500/30 hover:bg-gray-200 dark:hover:bg-blue-500/30"
               }`}
             >
               <Bookmark className={`h-4 w-4 ${showSavedOnly ? "fill-white" : ""}`} />
@@ -464,11 +464,11 @@ export default function ClientHomePage() {
             <button
               type="button"
               onClick={() => setIsQRModalOpen(true)}
-              className="p-2.5 bg-white dark:bg-primary-500 rounded-xl hover:bg-gray-100 dark:hover:bg-primary-600 transition-colors flex items-center justify-center border border-gray-300 dark:border-transparent"
+              className="p-2.5 bg-gray-100 dark:bg-blue-500/20 dark:border-blue-500/30 rounded-xl hover:bg-gray-200 dark:hover:bg-blue-500/30 transition-colors flex items-center justify-center border border-gray-300 dark:border-blue-500/30"
               aria-label="QR Code"
               style={{ borderRadius: '12px' }}
             >
-              <QrCode className="h-5 w-5 text-gray-700 dark:text-white" strokeWidth={2} />
+              <QrCode className="h-5 w-5 text-gray-700 dark:text-blue-300" strokeWidth={2} />
             </button>
           </div>
         </div>
