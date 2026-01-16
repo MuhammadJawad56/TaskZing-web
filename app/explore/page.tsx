@@ -124,15 +124,42 @@ export default function ExplorePage() {
   const loadJobs = async () => {
     try {
       setIsLoading(true);
+      console.log("[ExplorePage] loadJobs: Starting to fetch jobs...");
       const openJobs = await getOpenJobs();
-      console.log("Loaded jobs from Firebase:", openJobs.length, openJobs);
+      console.log("[ExplorePage] loadJobs: Received jobs from getOpenJobs:", openJobs.length);
+      console.log("[ExplorePage] loadJobs: Full jobs array:", openJobs);
+      
+      // Debug: Log each job's completionStatus and key fields
+      if (openJobs.length > 0) {
+        console.log("[ExplorePage] loadJobs: Job details breakdown:");
+        openJobs.forEach((job, index) => {
+          console.log(`[ExplorePage] Job ${index + 1}/${openJobs.length}:`, {
+            jobId: job.jobId,
+            title: job.title,
+            completionStatus: (job as any).completionStatus,
+            createdAt: job.createdAt,
+            category: job.category,
+            clientId: job.clientId,
+            hasPhotos: Array.isArray(job.photos) && job.photos.length > 0
+          });
+        });
+      } else {
+        console.warn("[ExplorePage] loadJobs: No jobs returned from getOpenJobs!");
+      }
+      
       setJobs(openJobs);
       setFilteredJobs(openJobs);
+      console.log("[ExplorePage] loadJobs: Jobs state updated, filteredJobs set to", openJobs.length, "jobs");
     } catch (error) {
-      console.error("Error loading jobs:", error);
+      console.error("[ExplorePage] loadJobs: Error loading jobs:", error);
+      console.error("[ExplorePage] loadJobs: Error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
       alert("Failed to load jobs. Please check your internet connection and try again.");
     } finally {
       setIsLoading(false);
+      console.log("[ExplorePage] loadJobs: Loading complete");
     }
   };
 

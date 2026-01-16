@@ -8,6 +8,7 @@ import {
   Timestamp,
   getDoc,
   doc,
+  addDoc,
 } from "firebase/firestore";
 import { db } from "./config";
 import { Task, CompletionStatus } from "@/lib/types/task";
@@ -15,16 +16,19 @@ import { Task, CompletionStatus } from "@/lib/types/task";
 // Get all open jobs/tasks from Firebase
 export async function getOpenJobs(): Promise<Task[]> {
   try {
-    // Try with orderBy first, fallback to without if index doesn't exist
+    console.log("[getOpenJobs] Starting job fetch...");
+    // Get all jobs and filter client-side for backward compatibility
+    // This ensures jobs from mobile app (without completionStatus) are also included
     let q;
     try {
+      // First try to get jobs with completionStatus == "open" and orderBy
       q = query(
         collection(db, "jobs"),
         where("completionStatus", "==", "open"),
         orderBy("createdAt", "desc")
       );
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map((doc) => {
+      const jobsWithStatus = querySnapshot.docs.map((doc) => {
         const data = doc.data();
         return {
           jobId: doc.id,
@@ -35,16 +39,89 @@ export async function getOpenJobs(): Promise<Task[]> {
                      (typeof data.updatedAt === 'string' ? data.updatedAt : new Date().toISOString()),
         } as Task;
       });
-    } catch (orderByError: any) {
-      // If orderBy fails (likely due to missing index), try without it
-      if (orderByError.code === 'failed-precondition' || orderByError.message?.includes('index')) {
-        console.warn("Firestore index missing, fetching without orderBy:", orderByError);
-        q = query(
-          collection(db, "jobs"),
-          where("completionStatus", "==", "open")
+      console.log(`[getOpenJobs] Jobs with completionStatus="open": ${jobsWithStatus.length}`);
+
+      // Also get all jobs without completionStatus filter (for backward compatibility with mobile app)
+      const allJobsQuery = query(collection(db, "jobs"));
+      const allJobsSnapshot = await getDocs(allJobsQuery);
+      const allJobs = allJobsSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          jobId: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || 
+                     (typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString()),
+          updatedAt: data.updatedAt?.toDate?.()?.toISOString() || 
+                     (typeof data.updatedAt === 'string' ? data.updatedAt : new Date().toISOString()),
+        } as Task;
+      });
+      console.log(`[getOpenJobs] Total jobs in database: ${allJobs.length}`);
+
+      // Debug: Analyze completionStatus distribution
+      const statusBreakdown: Record<string, number> = {};
+      allJobs.forEach((job) => {
+        const status = (job as any).completionStatus;
+        const statusKey = status === undefined ? "undefined" : status === null ? "null" : String(status);
+        statusBreakdown[statusKey] = (statusBreakdown[statusKey] || 0) + 1;
+      });
+      console.log("[getOpenJobs] CompletionStatus breakdown:", statusBreakdown);
+
+      // Debug: Show sample jobs without status
+      const sampleJobsWithoutStatus = allJobs.filter(job => {
+        const status = (job as any).completionStatus;
+        return status === undefined || status === null;
+      }).slice(0, 3);
+      if (sampleJobsWithoutStatus.length > 0) {
+        console.log("[getOpenJobs] Sample jobs without completionStatus:", 
+          sampleJobsWithoutStatus.map(j => ({
+            jobId: j.jobId,
+            title: j.title,
+            createdAt: j.createdAt,
+            hasCompletionStatus: (j as any).completionStatus !== undefined
+          }))
         );
+      }
+
+      // Combine and filter: include jobs with completionStatus == "open" OR jobs without completionStatus field
+      const jobIdsWithStatus = new Set(jobsWithStatus.map(j => j.jobId));
+      const jobsWithoutStatus = allJobs.filter(job => {
+        const status = (job as any).completionStatus;
+        const hasNoStatus = status === undefined || status === null;
+        return hasNoStatus && !jobIdsWithStatus.has(job.jobId);
+      });
+      console.log(`[getOpenJobs] Jobs without completionStatus (to include): ${jobsWithoutStatus.length}`);
+
+      // Combine both sets
+      const allOpenJobs = [...jobsWithStatus, ...jobsWithoutStatus];
+      console.log(`[getOpenJobs] Total open jobs (combined): ${allOpenJobs.length}`);
+
+      // Sort by createdAt descending
+      const sortedJobs = allOpenJobs.sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA;
+      });
+      
+      console.log(`[getOpenJobs] Returning ${sortedJobs.length} jobs`);
+      if (sortedJobs.length > 0) {
+        console.log("[getOpenJobs] Sample returned jobs:", 
+          sortedJobs.slice(0, 3).map(j => ({
+            jobId: j.jobId,
+            title: j.title,
+            completionStatus: (j as any).completionStatus,
+            createdAt: j.createdAt
+          }))
+        );
+      }
+      
+      return sortedJobs;
+    } catch (orderByError: any) {
+      // If orderBy fails, get all jobs and filter client-side
+      if (orderByError.code === 'failed-precondition' || orderByError.message?.includes('index')) {
+        console.warn("[getOpenJobs] Firestore index missing, fetching all jobs and filtering client-side:", orderByError);
+        q = query(collection(db, "jobs"));
         const querySnapshot = await getDocs(q);
-        const jobs = querySnapshot.docs.map((doc) => {
+        const allJobs = querySnapshot.docs.map((doc) => {
           const data = doc.data();
           return {
             jobId: doc.id,
@@ -55,17 +132,50 @@ export async function getOpenJobs(): Promise<Task[]> {
                        (typeof data.updatedAt === 'string' ? data.updatedAt : new Date().toISOString()),
           } as Task;
         });
-        // Sort client-side as fallback
-        return jobs.sort((a, b) => {
+        console.log(`[getOpenJobs] Fallback: Total jobs fetched: ${allJobs.length}`);
+        
+        // Filter client-side: include jobs with completionStatus == "open" OR jobs without completionStatus
+        const openJobs = allJobs.filter((job) => {
+          const status = (job as any).completionStatus;
+          const isOpen = status === "open" || status === undefined || status === null;
+          return isOpen;
+        });
+        console.log(`[getOpenJobs] Fallback: Filtered open jobs: ${openJobs.length}`);
+        
+        // Debug: Show what was filtered out
+        const filteredOut = allJobs.filter((job) => {
+          const status = (job as any).completionStatus;
+          return status !== "open" && status !== undefined && status !== null;
+        });
+        if (filteredOut.length > 0) {
+          console.log(`[getOpenJobs] Fallback: Filtered out ${filteredOut.length} jobs with status:`, 
+            filteredOut.map(j => ({
+              jobId: j.jobId,
+              title: j.title,
+              completionStatus: (j as any).completionStatus
+            }))
+          );
+        }
+        
+        // Sort client-side
+        const sortedJobs = openJobs.sort((a, b) => {
           const dateA = new Date(a.createdAt).getTime();
           const dateB = new Date(b.createdAt).getTime();
-          return dateB - dateA; // Descending order
+          return dateB - dateA;
         });
+        
+        console.log(`[getOpenJobs] Fallback: Returning ${sortedJobs.length} jobs`);
+        return sortedJobs;
       }
+      console.error("[getOpenJobs] OrderBy error (not index related):", orderByError);
       throw orderByError;
     }
   } catch (error) {
-    console.error("Error fetching jobs:", error);
+    console.error("[getOpenJobs] Error fetching jobs:", error);
+    console.error("[getOpenJobs] Error details:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return [];
   }
 }
@@ -73,54 +183,14 @@ export async function getOpenJobs(): Promise<Task[]> {
 // Get jobs by category
 export async function getJobsByCategory(category: string): Promise<Task[]> {
   try {
-    let q;
-    try {
-      q = query(
-        collection(db, "jobs"),
-        where("completionStatus", "==", "open"),
-        where("category", "==", category),
-        orderBy("createdAt", "desc")
-      );
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          jobId: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate?.()?.toISOString() || 
-                     (typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString()),
-          updatedAt: data.updatedAt?.toDate?.()?.toISOString() || 
-                     (typeof data.updatedAt === 'string' ? data.updatedAt : new Date().toISOString()),
-        } as Task;
-      });
-    } catch (orderByError: any) {
-      // Fallback without orderBy if index doesn't exist
-      if (orderByError.code === 'failed-precondition' || orderByError.message?.includes('index')) {
-        q = query(
-          collection(db, "jobs"),
-          where("completionStatus", "==", "open"),
-          where("category", "==", category)
-        );
-        const querySnapshot = await getDocs(q);
-        const jobs = querySnapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            jobId: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate?.()?.toISOString() || 
-                       (typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString()),
-            updatedAt: data.updatedAt?.toDate?.()?.toISOString() || 
-                       (typeof data.updatedAt === 'string' ? data.updatedAt : new Date().toISOString()),
-          } as Task;
-        });
-        return jobs.sort((a, b) => {
-          const dateA = new Date(a.createdAt).getTime();
-          const dateB = new Date(b.createdAt).getTime();
-          return dateB - dateA;
-        });
-      }
-      throw orderByError;
-    }
+    // Get all open jobs first (which handles backward compatibility)
+    const allOpenJobs = await getOpenJobs();
+    
+    // Filter by category client-side
+    return allOpenJobs.filter(job => 
+      job.category === category || 
+      job.subCategory === category
+    );
   } catch (error) {
     console.error("Error fetching jobs by category:", error);
     return [];
@@ -209,6 +279,30 @@ export async function getJobById(jobId: string): Promise<Task | null> {
   } catch (error) {
     console.error("Error fetching job:", error);
     return null;
+  }
+}
+
+// Create a new job
+export async function createJob(
+  clientId: string,
+  data: Omit<Task, "jobId" | "clientId" | "createdAt" | "updatedAt" | "completionStatus" | "proposalAcceptance" | "isVerified">
+): Promise<string> {
+  try {
+    const jobData = {
+      ...data,
+      clientId,
+      completionStatus: "open" as CompletionStatus,
+      proposalAcceptance: "open" as const,
+      isVerified: false,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    };
+
+    const docRef = await addDoc(collection(db, "jobs"), jobData);
+    return docRef.id;
+  } catch (error) {
+    console.error("Error creating job:", error);
+    throw error;
   }
 }
 

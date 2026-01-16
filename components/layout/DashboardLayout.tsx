@@ -67,7 +67,7 @@ const clientDesktopNavItems: NavItem[] = [
   { name: "Chat Zing", href: "/dashboard/chatzing-ai", icon: MessageCircle },
 ];
 
-// Mobile/Tablet navigation items (matching the design)
+// Mobile/Tablet navigation items (provider view)
 const mobileNavItems: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Explore", href: "/explore", icon: Compass },
@@ -75,6 +75,17 @@ const mobileNavItems: NavItem[] = [
   { name: "My Tasks", href: "/dashboard/my-tasks", icon: CheckSquare },
   { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
   { name: "Profile", href: "/dashboard/profile", icon: User },
+  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+];
+
+// Mobile/Tablet navigation items (client view)
+const clientMobileNavItems: NavItem[] = [
+  { name: "Home", href: "/client-home", icon: Home },
+  { name: "Explore", href: "/client-explore", icon: Compass },
+  { name: "Post a Job", href: "/post-task", icon: PlusCircle },
+  { name: "All Jobs", href: "/all-jobs", icon: Briefcase },
+  { name: "Messages", href: "/messages", icon: MessageSquare },
+  { name: "Profile", href: "/my-profile", icon: User },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
@@ -92,6 +103,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
   const { user, userData } = useAuth();
   const currentRole = userData?.currentRole || userData?.role || "provider";
   const desktopItems = currentRole === "client" ? clientDesktopNavItems : desktopNavItems;
+  const mobileItems = currentRole === "client" ? clientMobileNavItems : mobileNavItems;
   
   const userName = user?.displayName || userData?.fullName || user?.email?.split("@")[0] || "U";
   const userInitial = userName.charAt(0).toUpperCase();
@@ -239,7 +251,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
             
             {/* Navigation Items */}
             <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-              {mobileNavItems.map((item) => {
+              {mobileItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
                 return (
@@ -264,12 +276,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
               <Link
                 href="/dashboard/chatzing-ai"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={cn(
-                  "flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                  pathname === "/dashboard/chatzing-ai"
-                    ? "bg-primary-500 text-white"
-                    : "text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-theme-accent1 hover:text-gray-900 dark:hover:text-white"
-                )}
+                className="flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors bg-red-500 text-white hover:bg-red-600"
               >
                 <MessageCircle className="h-5 w-5 flex-shrink-0" />
                 <span>ChatZing AI</span>
@@ -300,19 +307,49 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
               </div>
             </nav>
             
-            {/* Switch to Client Button */}
+            {/* Switch Role Button */}
             <div className="p-4 border-t border-theme-accent2 dark:border-gray-700">
-              <button
-                onClick={() => {
-                  handleSwitchToClient();
-                  setIsMobileMenuOpen(false);
-                }}
-                disabled={isSwitching}
-                className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-sm font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ArrowLeftRight className="h-5 w-5" />
-                <span>{isSwitching ? "Switching..." : "Switch to Client"}</span>
-              </button>
+              {currentRole === "client" ? (
+                <button
+                  onClick={async () => {
+                    if (!user) {
+                      alert("Please log in to switch roles.");
+                      return;
+                    }
+                    setIsSwitching(true);
+                    try {
+                      await switchUserRole(user.uid, "provider");
+                      await new Promise(resolve => setTimeout(resolve, 500));
+                      router.push("/dashboard");
+                      setTimeout(() => {
+                        window.location.reload();
+                      }, 100);
+                    } catch (error: any) {
+                      console.error("Error switching to provider:", error);
+                      setIsSwitching(false);
+                      alert("Failed to switch role. Please try again.");
+                    }
+                    setIsMobileMenuOpen(false);
+                  }}
+                  disabled={isSwitching}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-sm font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ArrowLeftRight className="h-5 w-5" />
+                  <span>{isSwitching ? "Switching..." : "Switch to Provider"}</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    handleSwitchToClient();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  disabled={isSwitching}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-sm font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ArrowLeftRight className="h-5 w-5" />
+                  <span>{isSwitching ? "Switching..." : "Switch to Client"}</span>
+                </button>
+              )}
             </div>
           </aside>
         </div>
@@ -331,74 +368,161 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
       {/* Mobile Bottom Navigation Bar */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-[var(--app-surface)] border-t border-theme-accent2 dark:border-gray-700 z-40 shadow-lg">
         <div className="flex items-center justify-around h-16 px-2">
-          {/* Dashboard */}
-          <Link
-            href="/dashboard"
-            className={cn(
-              "flex flex-col items-center justify-center flex-1 h-full transition-colors",
-              pathname === "/dashboard"
-                ? "text-primary-500"
-                : "text-gray-600 dark:text-gray-400"
-            )}
-          >
-            <LayoutDashboard className={cn(
-              "h-6 w-6",
-              pathname === "/dashboard" && "fill-primary-500"
-            )} />
-          </Link>
-          
-          {/* Explore */}
-          <Link
-            href="/explore"
-            className={cn(
-              "flex flex-col items-center justify-center flex-1 h-full transition-colors",
-              pathname === "/explore"
-                ? "text-primary-500"
-                : "text-gray-600 dark:text-gray-400"
-            )}
-          >
-            <Compass className="h-6 w-6" />
-          </Link>
-          
-          {/* Add/Create Button - Large Red Circle */}
-          <button
-            onClick={() => setIsPlusMenuOpen(!isPlusMenuOpen)}
-            className="flex items-center justify-center w-12 h-12 rounded-full bg-primary-500 text-white shadow-lg -mt-5 transition-transform hover:scale-110 z-50"
-          >
-            <Plus className="h-6 w-6" strokeWidth={3} />
-          </button>
-          
-          {/* My Tasks */}
-          <Link
-            href="/dashboard/my-tasks"
-            className={cn(
-              "flex flex-col items-center justify-center flex-1 h-full transition-colors",
-              pathname === "/dashboard/my-tasks"
-                ? "text-primary-500"
-                : "text-gray-600 dark:text-gray-400"
-            )}
-          >
-            <CheckSquare className="h-6 w-6" />
-          </Link>
-          
-          {/* Profile */}
-          <Link
-            href="/dashboard/profile"
-            className={cn(
-              "flex flex-col items-center justify-center flex-1 h-full transition-colors relative",
-              pathname === "/dashboard/profile"
-                ? "text-primary-500"
-                : "text-gray-600 dark:text-gray-400"
-            )}
-          >
-            <div className="relative">
-              <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white font-semibold text-sm">
-                {userInitial}
-              </div>
-              {/* Notification Badge */}
-              <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary-500 border-2 border-white dark:border-darkBlue-013"></div>
-            </div>
-          </Link>
+          {currentRole === "client" ? (
+            <>
+              {/* Home */}
+              <Link
+                href="/client-home"
+                className={cn(
+                  "flex flex-col items-center justify-center flex-1 h-full transition-colors",
+                  pathname === "/client-home"
+                    ? "text-red-500"
+                    : "text-gray-600 dark:text-gray-400"
+                )}
+              >
+                <Home className={cn(
+                  "h-6 w-6",
+                  pathname === "/client-home" && "fill-red-500"
+                )} />
+                <span className="text-xs mt-0.5">Home</span>
+              </Link>
+              
+              {/* Explore */}
+              <Link
+                href="/client-explore"
+                className={cn(
+                  "flex flex-col items-center justify-center flex-1 h-full transition-colors",
+                  pathname === "/client-explore"
+                    ? "text-red-500"
+                    : "text-gray-600 dark:text-gray-400"
+                )}
+              >
+                <Compass className="h-6 w-6" />
+                <span className="text-xs mt-0.5">Explore</span>
+              </Link>
+              
+              {/* Add/Create Button - Large Red Circle */}
+              <button
+                onClick={() => setIsPlusMenuOpen(!isPlusMenuOpen)}
+                className="flex items-center justify-center w-12 h-12 rounded-full bg-red-500 text-white shadow-lg -mt-5 transition-transform hover:scale-110 z-50"
+              >
+                {isPlusMenuOpen ? (
+                  <X className="h-6 w-6" strokeWidth={3} />
+                ) : (
+                  <Plus className="h-6 w-6" strokeWidth={3} />
+                )}
+              </button>
+              
+              {/* Jobs */}
+              <Link
+                href="/all-jobs"
+                className={cn(
+                  "flex flex-col items-center justify-center flex-1 h-full transition-colors",
+                  pathname === "/all-jobs"
+                    ? "text-red-500"
+                    : "text-gray-600 dark:text-gray-400"
+                )}
+              >
+                <Briefcase className="h-6 w-6" />
+                <span className="text-xs mt-0.5">Jobs</span>
+              </Link>
+              
+              {/* Profile */}
+              <Link
+                href="/my-profile"
+                className={cn(
+                  "flex flex-col items-center justify-center flex-1 h-full transition-colors relative",
+                  pathname === "/my-profile"
+                    ? "text-red-500"
+                    : "text-gray-600 dark:text-gray-400"
+                )}
+              >
+                <div className="relative">
+                  <div className="h-8 w-8 rounded-full bg-pink-500 flex items-center justify-center text-white font-semibold text-sm">
+                    {userInitial}
+                  </div>
+                  {/* Notification Badge */}
+                  <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-gray-400 border-2 border-white dark:border-darkBlue-013"></div>
+                </div>
+                <span className="text-xs mt-0.5">Profile</span>
+              </Link>
+            </>
+          ) : (
+            <>
+              {/* Dashboard */}
+              <Link
+                href="/dashboard"
+                className={cn(
+                  "flex flex-col items-center justify-center flex-1 h-full transition-colors",
+                  pathname === "/dashboard"
+                    ? "text-primary-500"
+                    : "text-gray-600 dark:text-gray-400"
+                )}
+              >
+                <LayoutDashboard className={cn(
+                  "h-6 w-6",
+                  pathname === "/dashboard" && "fill-primary-500"
+                )} />
+              </Link>
+              
+              {/* Explore */}
+              <Link
+                href="/explore"
+                className={cn(
+                  "flex flex-col items-center justify-center flex-1 h-full transition-colors",
+                  pathname === "/explore"
+                    ? "text-primary-500"
+                    : "text-gray-600 dark:text-gray-400"
+                )}
+              >
+                <Compass className="h-6 w-6" />
+              </Link>
+              
+              {/* Add/Create Button - Large Red Circle */}
+              <button
+                onClick={() => setIsPlusMenuOpen(!isPlusMenuOpen)}
+                className="flex items-center justify-center w-12 h-12 rounded-full bg-primary-500 text-white shadow-lg -mt-5 transition-transform hover:scale-110 z-50"
+              >
+                {isPlusMenuOpen ? (
+                  <X className="h-6 w-6" strokeWidth={3} />
+                ) : (
+                  <Plus className="h-6 w-6" strokeWidth={3} />
+                )}
+              </button>
+              
+              {/* My Tasks */}
+              <Link
+                href="/dashboard/my-tasks"
+                className={cn(
+                  "flex flex-col items-center justify-center flex-1 h-full transition-colors",
+                  pathname === "/dashboard/my-tasks"
+                    ? "text-primary-500"
+                    : "text-gray-600 dark:text-gray-400"
+                )}
+              >
+                <CheckSquare className="h-6 w-6" />
+              </Link>
+              
+              {/* Profile */}
+              <Link
+                href="/dashboard/profile"
+                className={cn(
+                  "flex flex-col items-center justify-center flex-1 h-full transition-colors relative",
+                  pathname === "/dashboard/profile"
+                    ? "text-primary-500"
+                    : "text-gray-600 dark:text-gray-400"
+                )}
+              >
+                <div className="relative">
+                  <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white font-semibold text-sm">
+                    {userInitial}
+                  </div>
+                  {/* Notification Badge */}
+                  <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary-500 border-2 border-white dark:border-darkBlue-013"></div>
+                </div>
+              </Link>
+            </>
+          )}
         </div>
       </nav>
       
@@ -432,67 +556,151 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
               </svg>
               
               {/* Buttons positioned absolutely on the arc */}
-              {/* Messages - Left side, lower on the arc */}
-              <button
-                onClick={() => {
-                  router.push("/dashboard/messages");
-                  setIsPlusMenuOpen(false);
-                }}
-                className="absolute flex flex-col items-center"
-                style={{ left: '5%', bottom: '68px' }}
-              >
-                <div className="w-11 h-11 rounded-full bg-primary-500 flex items-center justify-center shadow-lg">
-                  <Send className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">Messages</span>
-              </button>
-              
-              {/* Notifications - Center-left, higher on arc */}
-              <button
-                onClick={() => {
-                  setIsPlusMenuOpen(false);
-                }}
-                className="absolute flex flex-col items-center"
-                style={{ left: '25%', bottom: '98px' }}
-              >
-                <div className="w-11 h-11 rounded-full bg-primary-500 flex items-center justify-center shadow-lg">
-                  <Bell className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">Notifications</span>
-              </button>
-              
-              {/* My Tasks - Center-right, higher on arc */}
-              <button
-                onClick={() => {
-                  router.push("/dashboard/my-tasks");
-                  setIsPlusMenuOpen(false);
-                }}
-                className="absolute flex flex-col items-center"
-                style={{ right: '25%', bottom: '98px' }}
-              >
-                <div className="w-11 h-11 rounded-full bg-primary-500 flex items-center justify-center shadow-lg">
-                  <CheckSquare className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">My Tasks</span>
-              </button>
-              
-              {/* Switch Role - Right side, lower on the arc */}
-              <button
-                onClick={() => {
-                  handleSwitchToClient();
-                  setIsPlusMenuOpen(false);
-                }}
-                disabled={isSwitching}
-                className="absolute flex flex-col items-center disabled:opacity-50"
-                style={{ right: '5%', bottom: '68px' }}
-              >
-                <div className="w-11 h-11 rounded-full bg-primary-500 flex items-center justify-center shadow-lg">
-                  <Users className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">
-                  {isSwitching ? "Switching..." : "Switch Role"}
-                </span>
-              </button>
+              {currentRole === "client" ? (
+                <>
+                  {/* Messages - Left side, lower on the arc */}
+                  <button
+                    onClick={() => {
+                      router.push("/messages");
+                      setIsPlusMenuOpen(false);
+                    }}
+                    className="absolute flex flex-col items-center"
+                    style={{ left: '5%', bottom: '68px' }}
+                  >
+                    <div className="w-11 h-11 rounded-full bg-red-500 flex items-center justify-center shadow-lg">
+                      <Send className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">Messages</span>
+                  </button>
+                  
+                  {/* Notifications - Center-left, higher on arc */}
+                  <button
+                    onClick={() => {
+                      setIsPlusMenuOpen(false);
+                    }}
+                    className="absolute flex flex-col items-center"
+                    style={{ left: '25%', bottom: '98px' }}
+                  >
+                    <div className="w-11 h-11 rounded-full bg-red-500 flex items-center justify-center shadow-lg">
+                      <Bell className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">Notifications</span>
+                  </button>
+                  
+                  {/* Post a Job - Center-right, higher on arc */}
+                  <button
+                    onClick={() => {
+                      router.push("/post-task");
+                      setIsPlusMenuOpen(false);
+                    }}
+                    className="absolute flex flex-col items-center"
+                    style={{ right: '25%', bottom: '98px' }}
+                  >
+                    <div className="w-11 h-11 rounded-full bg-red-500 flex items-center justify-center shadow-lg">
+                      <PlusCircle className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">Post a Job</span>
+                  </button>
+                  
+                  {/* Switch to Provider - Right side, lower on the arc */}
+                  <button
+                    onClick={async () => {
+                      if (!user) {
+                        alert("Please log in to switch roles.");
+                        return;
+                      }
+                      setIsSwitching(true);
+                      try {
+                        await switchUserRole(user.uid, "provider");
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        router.push("/dashboard");
+                        setTimeout(() => {
+                          window.location.reload();
+                        }, 100);
+                      } catch (error: any) {
+                        console.error("Error switching to provider:", error);
+                        setIsSwitching(false);
+                        alert("Failed to switch role. Please try again.");
+                      }
+                      setIsPlusMenuOpen(false);
+                    }}
+                    disabled={isSwitching}
+                    className="absolute flex flex-col items-center disabled:opacity-50"
+                    style={{ right: '5%', bottom: '68px' }}
+                  >
+                    <div className="w-11 h-11 rounded-full bg-red-500 flex items-center justify-center shadow-lg">
+                      <ArrowLeftRight className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">
+                      {isSwitching ? "Switching..." : "Switch to Provider"}
+                    </span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/* Messages - Left side, lower on the arc */}
+                  <button
+                    onClick={() => {
+                      router.push("/dashboard/messages");
+                      setIsPlusMenuOpen(false);
+                    }}
+                    className="absolute flex flex-col items-center"
+                    style={{ left: '5%', bottom: '68px' }}
+                  >
+                    <div className="w-11 h-11 rounded-full bg-primary-500 flex items-center justify-center shadow-lg">
+                      <Send className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">Messages</span>
+                  </button>
+                  
+                  {/* Notifications - Center-left, higher on arc */}
+                  <button
+                    onClick={() => {
+                      setIsPlusMenuOpen(false);
+                    }}
+                    className="absolute flex flex-col items-center"
+                    style={{ left: '25%', bottom: '98px' }}
+                  >
+                    <div className="w-11 h-11 rounded-full bg-primary-500 flex items-center justify-center shadow-lg">
+                      <Bell className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">Notifications</span>
+                  </button>
+                  
+                  {/* My Tasks - Center-right, higher on arc */}
+                  <button
+                    onClick={() => {
+                      router.push("/dashboard/my-tasks");
+                      setIsPlusMenuOpen(false);
+                    }}
+                    className="absolute flex flex-col items-center"
+                    style={{ right: '25%', bottom: '98px' }}
+                  >
+                    <div className="w-11 h-11 rounded-full bg-primary-500 flex items-center justify-center shadow-lg">
+                      <CheckSquare className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">My Tasks</span>
+                  </button>
+                  
+                  {/* Switch Role - Right side, lower on the arc */}
+                  <button
+                    onClick={() => {
+                      handleSwitchToClient();
+                      setIsPlusMenuOpen(false);
+                    }}
+                    disabled={isSwitching}
+                    className="absolute flex flex-col items-center disabled:opacity-50"
+                    style={{ right: '5%', bottom: '68px' }}
+                  >
+                    <div className="w-11 h-11 rounded-full bg-primary-500 flex items-center justify-center shadow-lg">
+                      <Users className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">
+                      {isSwitching ? "Switching..." : "Switch Role"}
+                    </span>
+                  </button>
+                </>
+              )}
               
               {/* Close Button - Bottom center */}
               <button

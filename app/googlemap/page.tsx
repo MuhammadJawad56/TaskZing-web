@@ -166,7 +166,9 @@ export default function GoogleMapPage() {
   const loadJobs = async () => {
     try {
       setIsLoading(true);
+      console.log("[GoogleMapPage] loadJobs: Starting to fetch jobs...");
       const openJobs = await getOpenJobs();
+      console.log("[GoogleMapPage] loadJobs: Received jobs from getOpenJobs:", openJobs.length);
       
       // Process jobs - geocode any that don't have coordinates
       const processedJobs = await Promise.all(
@@ -184,7 +186,7 @@ export default function GoogleMapPage() {
                 return { ...job, lat: coords.lat, lng: coords.lng };
               }
             } catch (error) {
-              console.warn(`Could not geocode address for job ${job.jobId}:`, error);
+              console.warn(`[GoogleMapPage] Could not geocode address for job ${job.jobId}:`, error);
             }
           }
           
@@ -192,11 +194,17 @@ export default function GoogleMapPage() {
         })
       );
       
+      console.log("[GoogleMapPage] loadJobs: Processed jobs:", processedJobs.length);
       setJobs(processedJobs);
     } catch (error) {
-      console.error("Error loading jobs:", error);
+      console.error("[GoogleMapPage] loadJobs: Error loading jobs:", error);
+      console.error("[GoogleMapPage] loadJobs: Error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
     } finally {
       setIsLoading(false);
+      console.log("[GoogleMapPage] loadJobs: Loading complete");
     }
   };
 
