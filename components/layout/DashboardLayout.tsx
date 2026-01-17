@@ -97,6 +97,8 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
+  const [switchModalTarget, setSwitchModalTarget] = useState<"client" | "provider">("client");
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
@@ -114,23 +116,48 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
       return;
     }
     
+    // Show confirmation modal first
+    setSwitchModalTarget("client");
+    setShowSwitchModal(true);
+  };
+
+  const handleSwitchToProvider = async () => {
+    if (!user) {
+      alert("Please log in to switch roles.");
+      return;
+    }
+    
+    // Show confirmation modal first
+    setSwitchModalTarget("provider");
+    setShowSwitchModal(true);
+  };
+
+  const performRoleSwitch = async () => {
+    if (!user) return;
+    
+    const targetRole = switchModalTarget;
+    setShowSwitchModal(false);
     setIsSwitching(true);
     try {
-      // Switch the role in Firestore (only updates currentRole, keeps role as Provider)
-      await switchUserRole(user.uid, "client");
+      // Switch the role in Firestore
+      await switchUserRole(user.uid, targetRole);
       
       // Wait a moment for Firestore to update
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Always redirect to client-home first when switching to client role
-      router.push("/client-home");
+      // Navigate based on target role
+      if (targetRole === "client") {
+        router.push("/client-home");
+      } else {
+        router.push("/dashboard");
+      }
       
       // Force a page reload to refresh auth context and user data
       setTimeout(() => {
         window.location.reload();
       }, 100);
     } catch (error: any) {
-      console.error("Error switching to client:", error);
+      console.error(`Error switching to ${targetRole}:`, error);
       setIsSwitching(false);
       
       // Provide user-friendly error messages
@@ -311,24 +338,8 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
             <div className="p-4 border-t border-theme-accent2 dark:border-gray-700">
               {currentRole === "client" ? (
                 <button
-                  onClick={async () => {
-                    if (!user) {
-                      alert("Please log in to switch roles.");
-                      return;
-                    }
-                    setIsSwitching(true);
-                    try {
-                      await switchUserRole(user.uid, "provider");
-                      await new Promise(resolve => setTimeout(resolve, 500));
-                      router.push("/dashboard");
-                      setTimeout(() => {
-                        window.location.reload();
-                      }, 100);
-                    } catch (error: any) {
-                      console.error("Error switching to provider:", error);
-                      setIsSwitching(false);
-                      alert("Failed to switch role. Please try again.");
-                    }
+                  onClick={() => {
+                    handleSwitchToProvider();
                     setIsMobileMenuOpen(false);
                   }}
                   disabled={isSwitching}
@@ -604,24 +615,8 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
                   
                   {/* Switch to Provider - Right side, lower on the arc */}
                   <button
-                    onClick={async () => {
-                      if (!user) {
-                        alert("Please log in to switch roles.");
-                        return;
-                      }
-                      setIsSwitching(true);
-                      try {
-                        await switchUserRole(user.uid, "provider");
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                        router.push("/dashboard");
-                        setTimeout(() => {
-                          window.location.reload();
-                        }, 100);
-                      } catch (error: any) {
-                        console.error("Error switching to provider:", error);
-                        setIsSwitching(false);
-                        alert("Failed to switch role. Please try again.");
-                      }
+                    onClick={() => {
+                      handleSwitchToProvider();
                       setIsPlusMenuOpen(false);
                     }}
                     disabled={isSwitching}
@@ -713,6 +708,67 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
             </div>
           </div>
         </>
+      )}
+
+      {/* Switch Role Confirmation Modal */}
+      {showSwitchModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+            {/* Modal Header */}
+            <div className="flex items-center gap-3 px-6 pt-6 pb-4">
+              <ArrowLeftRight className="h-6 w-6 text-red-500" />
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Switch to {switchModalTarget === "client" ? "Client" : "Provider"}
+              </h2>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 pb-6">
+              {switchModalTarget === "client" ? (
+                <>
+                  <p className="text-gray-700 dark:text-gray-300 mb-2">
+                    Are you sure you want to switch your role?
+                  </p>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    This will change your role while preserving all your signup data.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-700 dark:text-gray-300 mb-4">
+                    You are about to switch your role from Client to Provider. Your previous provider data will be automatically retrieved, including:
+                  </p>
+                  <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-2 mb-4">
+                    <li>Skills and expertise</li>
+                    <li>Service description</li>
+                    <li>Provider rating and reviews</li>
+                    <li>Job completion history</li>
+                  </ul>
+                  <p className="text-gray-700 dark:text-gray-300 font-medium">
+                    Do you want to continue?
+                  </p>
+                </>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex gap-4 px-6 pb-6 justify-end">
+              <button
+                onClick={() => setShowSwitchModal(false)}
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 font-medium hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={performRoleSwitch}
+                disabled={isSwitching}
+                className="px-6 py-2 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSwitching ? "Switching..." : "Switch Role"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

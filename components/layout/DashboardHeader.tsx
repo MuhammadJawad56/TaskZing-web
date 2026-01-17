@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Bell, Send, Video, Star, Menu, MessageSquare } from "lucide-react";
+import { Bell, Send, Video, Star, Menu, MessageSquare, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { useRouter } from "next/navigation";
@@ -21,6 +21,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
   const router = useRouter();
   const { theme } = useTheme();
   const [isSwitching, setIsSwitching] = useState(false);
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
   const currentRole = userData?.currentRole || userData?.role || "provider";
   const switchTarget = currentRole === "client" ? "provider" : "client";
 
@@ -33,6 +34,14 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
       return;
     }
     
+    // Show confirmation modal for both client and provider
+    setShowSwitchModal(true);
+  };
+
+  const performRoleSwitch = async () => {
+    if (!user) return;
+    
+    setShowSwitchModal(false);
     setIsSwitching(true);
     try {
       // Switch the role in Firestore (only updates currentRole)
@@ -166,6 +175,67 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
           </div>
         </div>
       </div>
+
+      {/* Switch Role Confirmation Modal */}
+      {showSwitchModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+            {/* Modal Header */}
+            <div className="flex items-center gap-3 px-6 pt-6 pb-4">
+              <ArrowLeftRight className="h-6 w-6 text-red-500" />
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Switch to {switchTarget === "client" ? "Client" : "Provider"}
+              </h2>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 pb-6">
+              {switchTarget === "client" ? (
+                <>
+                  <p className="text-gray-700 dark:text-gray-300 mb-2">
+                    Are you sure you want to switch your role?
+                  </p>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    This will change your role while preserving all your signup data.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-700 dark:text-gray-300 mb-4">
+                    You are about to switch your role from Client to Provider. Your previous provider data will be automatically retrieved, including:
+                  </p>
+                  <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-2 mb-4">
+                    <li>Skills and expertise</li>
+                    <li>Service description</li>
+                    <li>Provider rating and reviews</li>
+                    <li>Job completion history</li>
+                  </ul>
+                  <p className="text-gray-700 dark:text-gray-300 font-medium">
+                    Do you want to continue?
+                  </p>
+                </>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex gap-4 px-6 pb-6 justify-end">
+              <button
+                onClick={() => setShowSwitchModal(false)}
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 font-medium hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={performRoleSwitch}
+                disabled={isSwitching}
+                className="px-6 py-2 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSwitching ? "Switching..." : "Switch Role"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
