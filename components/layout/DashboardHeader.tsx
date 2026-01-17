@@ -50,19 +50,12 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
       // Wait a moment for Firestore to update
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Navigate based on new role - always redirect to client-home first when switching to client
+      // Navigate based on new role - use window.location for reliable redirect
       if (switchTarget === "client") {
-        router.push("/client-home");
-        // Force a page reload to refresh auth context and user data
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
+        // Always redirect to client-home when switching to client
+        window.location.href = "/client-home";
       } else {
-        router.push("/dashboard");
-        // Force a page reload to refresh auth context and user data
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
+        window.location.href = "/dashboard";
       }
     } catch (error: any) {
       console.error("Error switching role:", error);
@@ -79,8 +72,6 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
       }
       
       alert(errorMessage);
-    } finally {
-      setIsSwitching(false);
     }
   };
 

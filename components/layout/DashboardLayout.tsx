@@ -145,17 +145,13 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
       // Wait a moment for Firestore to update
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Navigate based on target role
+      // Navigate based on target role - use window.location for reliable redirect
       if (targetRole === "client") {
-        router.push("/client-home");
+        // Always redirect to client-home when switching to client
+        window.location.href = "/client-home";
       } else {
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
       }
-      
-      // Force a page reload to refresh auth context and user data
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
     } catch (error: any) {
       console.error(`Error switching to ${targetRole}:`, error);
       setIsSwitching(false);

@@ -9,6 +9,7 @@ import {
   getDoc,
   doc,
   addDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "./config";
 import { Task, CompletionStatus } from "@/lib/types/task";
@@ -282,6 +283,65 @@ export async function getJobById(jobId: string): Promise<Task | null> {
   }
 }
 
+// Get jobs by client ID (all jobs posted by a specific client)
+export async function getJobsByClientId(clientId: string): Promise<Task[]> {
+  try {
+    // Query jobs where clientId matches
+    const q = query(
+      collection(db, "jobs"),
+      where("clientId", "==", clientId),
+      orderBy("createdAt", "desc")
+    );
+    
+    try {
+      const querySnapshot = await getDocs(q);
+      const jobs = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          jobId: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || 
+                     (typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString()),
+          updatedAt: data.updatedAt?.toDate?.()?.toISOString() || 
+                     (typeof data.updatedAt === 'string' ? data.updatedAt : new Date().toISOString()),
+        } as Task;
+      });
+      
+      return jobs;
+    } catch (orderByError: any) {
+      // If orderBy fails, fetch all and filter client-side
+      if (orderByError.code === 'failed-precondition' || orderByError.message?.includes('index')) {
+        console.warn("[getJobsByClientId] Firestore index missing, fetching all jobs and filtering client-side");
+        const allJobsQuery = query(collection(db, "jobs"));
+        const allJobsSnapshot = await getDocs(allJobsQuery);
+        const allJobs = allJobsSnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            jobId: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate?.()?.toISOString() || 
+                       (typeof data.createdAt === 'string' ? data.createdAt : new Date().toISOString()),
+            updatedAt: data.updatedAt?.toDate?.()?.toISOString() || 
+                       (typeof data.updatedAt === 'string' ? data.updatedAt : new Date().toISOString()),
+          } as Task;
+        });
+        
+        // Filter by clientId and sort client-side
+        const clientJobs = allJobs.filter((job) => job.clientId === clientId);
+        return clientJobs.sort((a, b) => {
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return dateB - dateA;
+        });
+      }
+      throw orderByError;
+    }
+  } catch (error) {
+    console.error("Error fetching jobs by client ID:", error);
+    return [];
+  }
+}
+
 // Create a new job
 export async function createJob(
   clientId: string,
@@ -302,6 +362,31 @@ export async function createJob(
     return docRef.id;
   } catch (error) {
     console.error("Error creating job:", error);
+    throw error;
+  }
+}
+
+// Delete a job by ID
+export async function deleteJob(jobId: string, clientId: string): Promise<void> {
+  try {
+    // First verify the job belongs to the client
+    const jobDoc = await getDoc(doc(db, "jobs", jobId));
+    
+    if (!jobDoc.exists()) {
+      throw new Error("Job not found");
+    }
+
+    const jobData = jobDoc.data();
+    if (jobData.clientId !== clientId) {
+      throw new Error("You don't have permission to delete this job");
+    }
+
+    // Delete the job document
+    await deleteDoc(doc(db, "jobs", jobId));
+    
+    console.log(`Job ${jobId} deleted successfully`);
+  } catch (error) {
+    console.error("Error deleting job:", error);
     throw error;
   }
 }
