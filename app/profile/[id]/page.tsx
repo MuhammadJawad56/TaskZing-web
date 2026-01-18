@@ -301,7 +301,11 @@ export default function ProfilePage() {
                     </tr>
                   ) : (
                     filteredJobs.map((job) => (
-                      <tr key={job.jobId} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <tr 
+                        key={job.jobId} 
+                        onClick={() => router.push(`/all-jobs/${job.jobId}`)}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                      >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="h-8 w-8 rounded-full bg-pink-200 text-pink-700 flex items-center justify-center text-xs font-medium overflow-hidden">
               {profileUser?.photoUrl ? (
@@ -317,12 +321,9 @@ export default function ProfilePage() {
                         </td>
                         <td className="px-6 py-4">
                           <div>
-                            <Link
-                              href={`/task/${job.jobId}`}
-                              className="font-medium text-theme-primaryText hover:text-gray-700 dark:hover:text-gray-300"
-                            >
+                            <div className="font-medium text-theme-primaryText">
                               {job.title}
-                            </Link>
+                            </div>
                             <p className="text-sm text-theme-accent4 truncate max-w-md">
                               {job.description || job.address}
                             </p>
