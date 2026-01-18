@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { MapPin, Map, Search, Heart, MessageSquare, Sparkles, Bookmark, Grid3x3, X, QrCode } from "lucide-react";
+import { MapPin, Map, Search, Heart, MessageSquare, Sparkles, Bookmark, Grid3x3, X, QrCode, Target } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -416,9 +416,72 @@ export default function ClientHomePage() {
       )}
 
       <div className="-mx-4 sm:-mx-6 lg:-mx-8 -my-8">
-        {/* Search Bar */}
+        {/* Search Bar - Mobile Layout */}
         <div className="bg-white dark:bg-darkBlue-003 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-          <div className="flex items-center gap-2">
+          {/* Mobile View - Stacked Layout */}
+          <div className="lg:hidden space-y-3">
+            {/* First Row: Near me, Search, Map */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleNearMe}
+                disabled={isFetchingLocation}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                  nearMeActive
+                    ? "bg-red-600 text-white hover:bg-red-700"
+                    : "bg-red-500 text-white hover:bg-red-600"
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <Target className={`h-4 w-4 ${isFetchingLocation ? "animate-spin" : ""}`} />
+                {isFetchingLocation ? "Locating..." : "Near me"}
+              </button>
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search for services"
+                  className="w-full px-4 py-2.5 pl-10 pr-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-darkBlue-003 dark:text-white"
+                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              </div>
+              <Link
+                href="/googlemap"
+                className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-darkBlue-003 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600"
+              >
+                <Map className="h-4 w-4" />
+                <span className="hidden sm:inline">Map</span>
+              </Link>
+            </div>
+            
+            {/* Second Row: QR Code, Show Saved - Right aligned */}
+            <div className="flex items-center gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setIsQRModalOpen(true)}
+                className="p-2.5 bg-gray-100 dark:bg-blue-500/20 dark:border-blue-500/30 rounded-xl hover:bg-gray-200 dark:hover:bg-blue-500/30 transition-colors flex items-center justify-center border border-gray-300 dark:border-blue-500/30"
+                aria-label="QR Code"
+                style={{ borderRadius: '12px' }}
+              >
+                <QrCode className="h-5 w-5 text-gray-700 dark:text-blue-300" strokeWidth={2} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowSavedOnly(!showSavedOnly)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                  showSavedOnly
+                    ? "bg-red-500 text-white border-red-600"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600"
+                }`}
+              >
+                <Bookmark className={`h-4 w-4 ${showSavedOnly ? "fill-white" : ""}`} />
+                Show Saved
+              </button>
+            </div>
+          </div>
+
+          {/* Desktop View - Original Layout */}
+          <div className="hidden lg:flex items-center gap-2">
             <button
               type="button"
               onClick={handleNearMe}
