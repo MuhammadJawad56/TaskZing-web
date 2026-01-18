@@ -128,16 +128,17 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
               <Video className="h-5 w-5 text-gray-700 dark:text-white" />
             </button>
 
-            {/* Sparkle Button - Red pill with stars */}
-            <button
-              className="p-1.5 rounded-full bg-primary-500 hover:bg-primary-600 transition-colors"
-              aria-label="Sparkle"
+            {/* AI Button - Red pill with stars */}
+            <Link
+              href="/dashboard/chatzing-ai"
+              className="px-3 py-1.5 rounded-full bg-red-500 hover:bg-red-600 transition-colors flex items-center justify-center shadow-sm"
+              aria-label="ChatZing AI"
             >
-              <div className="flex items-center justify-center gap-0.5">
-                <Star className="h-3 w-3 text-white" fill="white" />
-                <Star className="h-2.5 w-2.5 text-white" fill="white" />
+              <div className="flex items-center justify-center gap-1">
+                <Star className="h-4 w-4 text-white fill-white" />
+                <Star className="h-3.5 w-3.5 text-white fill-white" />
               </div>
-            </button>
+            </Link>
 
             {/* Hamburger Menu - Visible on mobile/tablet, hidden on desktop */}
             <button

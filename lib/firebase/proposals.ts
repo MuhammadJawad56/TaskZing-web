@@ -352,10 +352,6 @@ export async function getProposalsByProviderId(providerId: string): Promise<Prop
           console.error(`[getProposalsByProviderId] Error fetching proposals from ${collectionName}:`, error);
           continue;
         }
-      } catch (error: any) {
-        console.error(`[getProposalsByProviderId] Error with collection ${collectionName}:`, error);
-        // Continue to next collection
-        continue;
       }
     }
 

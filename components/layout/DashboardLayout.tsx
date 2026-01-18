@@ -29,6 +29,7 @@ import {
   Bell,
   Send,
   Users,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { DashboardHeader } from "./DashboardHeader";
@@ -43,49 +44,49 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-// Desktop navigation items (provider view)
-const desktopNavItems: NavItem[] = [
+// Desktop navigation items (provider view) - will be updated with user ID dynamically
+const getDesktopNavItems = (userId: string): NavItem[] => [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Explore", href: "/explore", icon: Compass },
   { name: "Showcase", href: "/dashboard/showcase", icon: Briefcase },
   { name: "My Tasks", href: "/dashboard/my-tasks", icon: CheckSquare },
   { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
-  { name: "Profile", href: "/dashboard/profile", icon: User },
+  { name: "Profile", href: `/profile/${userId}`, icon: User },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
   { name: "Chat Zing", href: "/dashboard/chatzing-ai", icon: MessageCircle },
 ];
 
-// Desktop navigation items (client view)
-const clientDesktopNavItems: NavItem[] = [
+// Desktop navigation items (client view) - will be updated with user ID dynamically
+const getClientDesktopNavItems = (userId: string): NavItem[] => [
   { name: "Home", href: "/client-home", icon: Home },
   { name: "Explore", href: "/client-explore", icon: Compass },
   { name: "Post a Job", href: "/post-task", icon: PlusCircle },
   { name: "All Jobs", href: "/all-jobs", icon: Briefcase },
   { name: "Messages", href: "/messages", icon: MessageSquare },
-  { name: "Profile", href: "/my-profile", icon: User },
+  { name: "Profile", href: `/profile/${userId}`, icon: User },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
   { name: "Chat Zing", href: "/dashboard/chatzing-ai", icon: MessageCircle },
 ];
 
-// Mobile/Tablet navigation items (provider view)
-const mobileNavItems: NavItem[] = [
+// Mobile/Tablet navigation items (provider view) - will be updated with user ID dynamically
+const getMobileNavItems = (userId: string): NavItem[] => [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Explore", href: "/explore", icon: Compass },
   { name: "Showcase Work", href: "/dashboard/showcase", icon: Briefcase },
   { name: "My Tasks", href: "/dashboard/my-tasks", icon: CheckSquare },
   { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
-  { name: "Profile", href: "/dashboard/profile", icon: User },
+  { name: "Profile", href: `/profile/${userId}`, icon: User },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-// Mobile/Tablet navigation items (client view)
-const clientMobileNavItems: NavItem[] = [
+// Mobile/Tablet navigation items (client view) - will be updated with user ID dynamically
+const getClientMobileNavItems = (userId: string): NavItem[] => [
   { name: "Home", href: "/client-home", icon: Home },
   { name: "Explore", href: "/client-explore", icon: Compass },
   { name: "Post a Job", href: "/post-task", icon: PlusCircle },
   { name: "All Jobs", href: "/all-jobs", icon: Briefcase },
   { name: "Messages", href: "/messages", icon: MessageSquare },
-  { name: "Profile", href: "/my-profile", icon: User },
+  { name: "Profile", href: `/profile/${userId}`, icon: User },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
@@ -104,8 +105,9 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
   const router = useRouter();
   const { user, userData } = useAuth();
   const currentRole = userData?.currentRole || userData?.role || "provider";
-  const desktopItems = currentRole === "client" ? clientDesktopNavItems : desktopNavItems;
-  const mobileItems = currentRole === "client" ? clientMobileNavItems : mobileNavItems;
+  const userId = user?.uid || userData?.uid || "";
+  const desktopItems = currentRole === "client" ? getClientDesktopNavItems(userId) : getDesktopNavItems(userId);
+  const mobileItems = currentRole === "client" ? getClientMobileNavItems(userId) : getMobileNavItems(userId);
   
   const userName = user?.displayName || userData?.fullName || user?.email?.split("@")[0] || "U";
   const userInitial = userName.charAt(0).toUpperCase();
@@ -184,7 +186,9 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             {desktopItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isActive = item.href.startsWith("/profile/") 
+                ? pathname?.startsWith("/profile/")
+                : pathname === item.href;
               return (
                 <Link
                   key={item.href}
@@ -276,7 +280,9 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
             <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
               {mobileItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname === item.href;
+                const isActive = item.href.startsWith("/profile/") 
+                  ? pathname?.startsWith("/profile/")
+                  : pathname === item.href;
                 return (
                   <Link
                     key={item.href}
@@ -299,10 +305,12 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
               <Link
                 href="/dashboard/chatzing-ai"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors bg-red-500 text-white hover:bg-red-600"
+                className="flex items-center justify-center px-4 py-2 rounded-full bg-red-500 hover:bg-red-600 transition-colors"
               >
-                <MessageCircle className="h-5 w-5 flex-shrink-0" />
-                <span>ChatZing AI</span>
+                <div className="flex items-center gap-1">
+                  <Star className="h-4 w-4 text-white fill-white" />
+                  <Star className="h-3.5 w-3.5 text-white fill-white" />
+                </div>
               </Link>
               
               {/* Dark Mode Toggle */}
@@ -436,10 +444,10 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
               
               {/* Profile */}
               <Link
-                href="/my-profile"
+                href={userId ? `/profile/${userId}` : "/my-profile"}
                 className={cn(
                   "flex flex-col items-center justify-center flex-1 h-full transition-colors relative",
-                  pathname === "/my-profile"
+                  pathname?.startsWith("/profile/")
                     ? "text-red-500"
                     : "text-gray-600 dark:text-gray-400"
                 )}
@@ -512,10 +520,10 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
               
               {/* Profile */}
               <Link
-                href="/dashboard/profile"
+                href={userId ? `/profile/${userId}` : "/dashboard/profile"}
                 className={cn(
                   "flex flex-col items-center justify-center flex-1 h-full transition-colors relative",
-                  pathname === "/dashboard/profile"
+                  pathname?.startsWith("/profile/")
                     ? "text-primary-500"
                     : "text-gray-600 dark:text-gray-400"
                 )}
