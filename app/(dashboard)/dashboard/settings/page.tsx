@@ -132,7 +132,7 @@ export default function SettingsPage() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => router.push("/terms-conditions")}
+          onClick={() => router.push("/dashboard/terms-conditions")}
         >
           {t("settings.viewTerms")}
         </Button>

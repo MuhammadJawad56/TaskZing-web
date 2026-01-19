@@ -69,15 +69,15 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Modal Content */}
       <div
         className={cn(
-          "relative z-50 w-full rounded-lg bg-white shadow-xl",
+          "relative z-50 w-full rounded-lg bg-white dark:bg-gray-800 shadow-xl flex flex-col max-h-[90vh]",
           sizes[size]
         )}
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between border-b border-secondary-200 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-secondary-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
             {title && (
-              <h2 id="modal-title" className="text-xl font-semibold text-secondary-900">
+              <h2 id="modal-title" className="text-xl font-semibold text-secondary-900 dark:text-white">
                 {title}
               </h2>
             )}
@@ -95,8 +95,10 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
         )}
 
-        {/* Body */}
-        <div className="px-6 py-4">{children}</div>
+        {/* Body - Scrollable with proper height constraints */}
+        <div className="px-6 py-4 dark:text-gray-200 overflow-y-auto flex-1 min-h-0 max-h-[calc(90vh-200px)]">
+          {children}
+        </div>
       </div>
     </div>
   );
