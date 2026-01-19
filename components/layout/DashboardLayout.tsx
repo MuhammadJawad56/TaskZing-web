@@ -301,16 +301,19 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
                 );
               })}
               
-              {/* ChatZing AI */}
+              {/* Chat Zing */}
               <Link
                 href="/dashboard/chatzing-ai"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center justify-center px-4 py-2 rounded-full bg-red-500 hover:bg-red-600 transition-colors"
+                className={cn(
+                  "flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+                  pathname === "/dashboard/chatzing-ai"
+                    ? "bg-primary-500 text-white"
+                    : "text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-theme-accent1 hover:text-gray-900 dark:hover:text-white"
+                )}
               >
-                <div className="flex items-center gap-1">
-                  <Star className="h-4 w-4 text-white fill-white" />
-                  <Star className="h-3.5 w-3.5 text-white fill-white" />
-                </div>
+                <MessageCircle className="h-5 w-5 flex-shrink-0" />
+                <span>Chat Zing</span>
               </Link>
               
               {/* Dark Mode Toggle */}

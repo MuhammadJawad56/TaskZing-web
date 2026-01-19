@@ -135,6 +135,10 @@ export default function ProfilePage() {
         const deletePromises = snapshot.docs.map((doc) => deleteDoc(doc.ref));
         await Promise.all(deletePromises);
         setIsBookmarked(false);
+        // Reload bookmarked profiles if viewing own profile and saved tab is active
+        if (isOwnProfile && activeTab === "saved") {
+          loadBookmarkedProfiles();
+        }
       } else {
         // Add bookmark
         await addDoc(collection(db, "profileBookmarks"), {
@@ -143,6 +147,10 @@ export default function ProfilePage() {
           createdAt: Timestamp.now(),
         });
         setIsBookmarked(true);
+        // Reload bookmarked profiles if viewing own profile and saved tab is active
+        if (isOwnProfile && activeTab === "saved") {
+          loadBookmarkedProfiles();
+        }
       }
     } catch (error) {
       console.error("Error toggling bookmark:", error);
@@ -157,13 +165,30 @@ export default function ProfilePage() {
 
     setLoadingBookmarks(true);
     try {
+      // First, get all bookmarks without ordering to avoid index issues
       const q = query(
         collection(db, "profileBookmarks"),
-        where("bookmarkedBy", "==", currentUser.uid),
-        orderBy("createdAt", "desc")
+        where("bookmarkedBy", "==", currentUser.uid)
       );
       const snapshot = await getDocs(q);
-      const profileIds = snapshot.docs.map((doc) => doc.data().profileUserId);
+      const bookmarks = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          profileUserId: data.profileUserId as string,
+          createdAt: data.createdAt as Timestamp | undefined,
+        };
+      });
+      
+      // Sort by createdAt if available, otherwise by document ID
+      bookmarks.sort((a, b) => {
+        if (a.createdAt && b.createdAt) {
+          return b.createdAt.toMillis() - a.createdAt.toMillis();
+        }
+        return b.id.localeCompare(a.id);
+      });
+      
+      const profileIds = bookmarks.map((bookmark) => bookmark.profileUserId).filter(Boolean);
 
       // Fetch user data for each bookmarked profile
       const profilePromises = profileIds.map((id) => getUserById(id));
@@ -171,6 +196,7 @@ export default function ProfilePage() {
       setBookmarkedProfiles(profiles.filter((p) => p !== null) as User[]);
     } catch (error) {
       console.error("Error loading bookmarked profiles:", error);
+      setBookmarkedProfiles([]);
     } finally {
       setLoadingBookmarks(false);
     }
@@ -505,55 +531,45 @@ export default function ProfilePage() {
 
         {/* Saved Tab */}
         {activeTab === "saved" && (
-          <div className="bg-white rounded-lg overflow-hidden">
+          <div className="bg-white dark:bg-darkBlue-003 rounded-lg p-6">
             {loadingBookmarks ? (
-              <div className="p-8 text-center text-theme-accent4">Loading saved profiles...</div>
+              <div className="text-center py-8 text-theme-accent4">Loading saved profiles...</div>
             ) : bookmarkedProfiles.length === 0 ? (
-              <div className="p-8 text-center text-theme-accent4">
-                No saved profiles yet
-              </div>
+              <p className="text-theme-accent4 text-center py-8">
+                No saved profiles yet. Bookmark profiles to see them here.
+              </p>
             ) : (
-              <div className="divide-y divide-theme-accent2">
-                {bookmarkedProfiles.map((user) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {bookmarkedProfiles.map((profile) => (
                   <div
-                    key={user.uid}
-                    onClick={() => router.push(`/profile/${user.uid}`)}
-                    className="p-6 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors flex items-center gap-4"
+                    key={profile.uid}
+                    onClick={() => router.push(`/profile/${profile.uid}`)}
+                    className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                   >
-                    <div className="h-16 w-16 rounded-full bg-pink-200 text-pink-700 flex items-center justify-center text-xl font-medium overflow-hidden flex-shrink-0">
-                      {user.photoUrl ? (
+                    <div className="h-12 w-12 rounded-full bg-red-200 text-red-700 flex items-center justify-center text-lg font-medium overflow-hidden flex-shrink-0">
+                      {profile.photoUrl ? (
                         <img
-                          src={user.photoUrl}
-                          alt={user.fullName || user.username || "User"}
+                          src={profile.photoUrl}
+                          alt={profile.fullName || profile.username || "User"}
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <span>{getInitials(user.fullName || user.username || user.email?.split("@")[0] || "User")}</span>
+                        <span>{getInitials(profile.fullName || profile.username || profile.email?.split("@")[0])}</span>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-theme-primaryText mb-1">
-                        {user.fullName || user.username || user.email?.split("@")[0] || "User"}
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-base line-clamp-1">
+                        {profile.fullName || profile.username || profile.email?.split("@")[0] || "User"}
                       </h3>
-                      {user.location && (
-                        <div className="flex items-center gap-2 text-theme-accent4 mb-1">
-                          <MapPin className="h-3 w-3" />
-                          <span className="text-sm">{user.location}</span>
-                        </div>
-                      )}
-                      {user.description && (
-                        <p className="text-sm text-theme-accent4 line-clamp-2">
-                          {user.description}
+                      {profile.location && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">
+                          {profile.location}
                         </p>
                       )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {user.totalRating > 0 && (
-                        <div className="flex items-center gap-1 text-theme-accent4">
-                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm">
-                            {user.totalRating.toFixed(1)} ({user.totalReviews || 0})
-                          </span>
+                      {profile.totalRating !== undefined && (
+                        <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                          <span>{profile.totalRating.toFixed(1)} ({profile.totalReviews || 0})</span>
                         </div>
                       )}
                     </div>
