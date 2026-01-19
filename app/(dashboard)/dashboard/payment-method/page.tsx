@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -9,10 +9,10 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
-import { ArrowLeft, CreditCard, Check, Shield, Lock } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+import { ArrowLeft, CreditCard, Plus, Trash2, X } from "lucide-react";
 import { useAuth } from "@/lib/firebase/AuthContext";
+import { collection, query, where, getDocs, addDoc, deleteDoc, Timestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
 
 // Initialize Stripe - Replace with your publishable key
 const stripePromise = loadStripe(
@@ -39,17 +39,25 @@ const cardElementOptions = {
   hidePostalCode: false,
 };
 
-// Payment Form Component
-function PaymentForm() {
+interface PaymentMethod {
+  id: string;
+  paymentMethodId: string;
+  cardBrand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+  createdAt: Timestamp;
+}
+
+// Payment Form Component (Modal)
+function AddPaymentForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
-  const router = useRouter();
-  const { user, userData } = useAuth();
+  const { user } = useAuth();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
   const [cardComplete, setCardComplete] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [cardholderName, setCardholderName] = useState("");
 
   const handleCardChange = (event: any) => {
@@ -60,7 +68,7 @@ function PaymentForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!stripe || !elements) {
+    if (!stripe || !elements || !user) {
       return;
     }
 
@@ -86,7 +94,7 @@ function PaymentForm() {
         card: cardElement,
         billing_details: {
           name: cardholderName,
-          email: user?.email || undefined,
+          email: user.email || undefined,
         },
       });
 
@@ -96,190 +104,268 @@ function PaymentForm() {
         return;
       }
 
-      // Here you would typically send the paymentMethod.id to your backend
-      // to attach it to the customer in Stripe
-      console.log("Payment Method created:", paymentMethod);
+      if (!paymentMethod) {
+        setCardError("Failed to create payment method");
+        setIsProcessing(false);
+        return;
+      }
 
-      // For demo purposes, we'll simulate a successful save
-      // In production, you would:
-      // 1. Send paymentMethod.id to your backend API
-      // 2. Your backend attaches it to the Stripe customer
-      // 3. Save reference in Firestore
+      // Save payment method to Firestore
+      const paymentMethodData = {
+        userId: user.uid,
+        paymentMethodId: paymentMethod.id,
+        cardBrand: paymentMethod.card?.brand || "unknown",
+        last4: paymentMethod.card?.last4 || "",
+        expMonth: paymentMethod.card?.exp_month || 0,
+        expYear: paymentMethod.card?.exp_year || 0,
+        createdAt: Timestamp.now(),
+      };
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await addDoc(collection(db, "paymentMethods"), paymentMethodData);
 
-      setPaymentSuccess(true);
-
-      // Redirect after success
-      setTimeout(() => {
-        router.push("/dashboard/settings");
-      }, 2000);
+      // Success - close modal and refresh list
+      onSuccess();
+      onClose();
     } catch (err: any) {
+      console.error("Error saving payment method:", err);
       setCardError(err.message || "An unexpected error occurred");
+    } finally {
       setIsProcessing(false);
     }
   };
 
-  if (paymentSuccess) {
-    return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Check className="h-8 w-8 text-green-600 dark:text-green-400" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Payment Method Added!
-        </h2>
-        <p className="text-gray-600 dark:text-gray-300">
-          Your card has been saved successfully. Redirecting...
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Cardholder Name */}
-      <div>
-        <label
-          htmlFor="cardholderName"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-        >
-          Cardholder Name
-        </label>
-        <input
-          type="text"
-          id="cardholderName"
-          value={cardholderName}
-          onChange={(e) => setCardholderName(e.target.value)}
-          placeholder="John Doe"
-          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-darkBlue-003 dark:text-white transition-all"
-          required
-        />
-      </div>
-
-      {/* Card Details */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Card Details
-        </label>
-        <div className="p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-darkBlue-003 transition-all focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-transparent">
-          <CardElement options={cardElementOptions} onChange={handleCardChange} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Add New Card</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+          >
+            <X className="h-5 w-5 text-gray-500" />
+          </button>
         </div>
-        {cardError && (
-          <p className="mt-2 text-sm text-red-600 dark:text-red-400">{cardError}</p>
-        )}
-      </div>
 
-      {/* Security Notice */}
-      <div className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-darkBlue-003 rounded-lg">
-        <Shield className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-        <div className="text-sm text-gray-600 dark:text-gray-300">
-          <p className="font-medium text-gray-900 dark:text-white">Secure Payment</p>
-          <p>
-            Your payment information is encrypted and securely processed by Stripe.
-            We never store your full card details.
-          </p>
-        </div>
-      </div>
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {/* Cardholder Name */}
+          <div>
+            <label
+              htmlFor="cardholderName"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Cardholder Name
+            </label>
+            <input
+              type="text"
+              id="cardholderName"
+              value={cardholderName}
+              onChange={(e) => setCardholderName(e.target.value)}
+              placeholder="John Doe"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
+              required
+            />
+          </div>
 
-      {/* Submit Button */}
-      <Button
-        type="submit"
-        variant="primary"
-        className="w-full py-3"
-        disabled={!stripe || isProcessing || !cardComplete}
-        isLoading={isProcessing}
-      >
-        {isProcessing ? "Saving..." : "Save Payment Method"}
-      </Button>
+          {/* Card Details */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Card Details
+            </label>
+            <div className="p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 transition-all focus-within:ring-2 focus-within:ring-red-500 focus-within:border-transparent">
+              <CardElement options={cardElementOptions} onChange={handleCardChange} />
+            </div>
+            {cardError && (
+              <p className="mt-2 text-sm text-red-600 dark:text-red-400">{cardError}</p>
+            )}
+          </div>
 
-      {/* Test Card Info */}
-      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-        <p className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">
-          🧪 Test Mode - Use these test card numbers:
-        </p>
-        <ul className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
-          <li>• Success: 4242 4242 4242 4242</li>
-          <li>• Decline: 4000 0000 0000 0002</li>
-          <li>• Use any future date, any 3-digit CVC, any ZIP</li>
-        </ul>
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={!stripe || isProcessing || !cardComplete}
+            className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isProcessing ? "Saving..." : "Add Card"}
+          </button>
+        </form>
       </div>
-    </form>
+    </div>
   );
 }
 
 // Main Page Component
 export default function PaymentMethodPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Load payment methods
+  useEffect(() => {
+    if (user) {
+      loadPaymentMethods();
+    }
+  }, [user]);
+
+  const loadPaymentMethods = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const q = query(
+        collection(db, "paymentMethods"),
+        where("userId", "==", user.uid)
+      );
+      const snapshot = await getDocs(q);
+      const methods = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as PaymentMethod[];
+      
+      // Sort by creation date (newest first)
+      methods.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+      
+      setPaymentMethods(methods);
+    } catch (error) {
+      console.error("Error loading payment methods:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (paymentMethodId: string, docId: string) => {
+    if (!confirm("Are you sure you want to delete this payment method?")) {
+      return;
+    }
+
+    setDeletingId(docId);
+    try {
+      // Delete from Firestore
+      await deleteDoc(doc(db, "paymentMethods", docId));
+      
+      // Reload payment methods
+      await loadPaymentMethods();
+    } catch (error) {
+      console.error("Error deleting payment method:", error);
+      alert("Failed to delete payment method. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const getCardIcon = (brand: string) => {
+    const brandLower = brand.toLowerCase();
+    if (brandLower.includes("visa")) return "VISA";
+    if (brandLower.includes("mastercard") || brandLower.includes("master")) return "MasterCard";
+    if (brandLower.includes("amex") || brandLower.includes("american")) return "AMEX";
+    if (brandLower.includes("discover")) return "Discover";
+    return brand.toUpperCase();
+  };
+
+  const formatExpiryDate = (month: number, year: number) => {
+    const formattedMonth = month.toString().padStart(2, "0");
+    const formattedYear = year.toString().slice(-2);
+    return `${formattedMonth}/${formattedYear}`;
+  };
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Back Button */}
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={() => router.back()}
+          className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        >
+          <ArrowLeft className="h-6 w-6 text-gray-900 dark:text-gray-100" />
+        </button>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Payment Method</h1>
+        <button
+          onClick={() => router.push("/dashboard/settings")}
+          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+
+      {/* Add New Card Button */}
       <button
-        onClick={() => router.push("/dashboard/settings")}
-        className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white mb-6 transition-colors"
+        onClick={() => setShowAddForm(true)}
+        className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 transition-colors mb-6"
       >
-        <ArrowLeft className="h-5 w-5" />
-        <span>Back to Settings</span>
+        <CreditCard className="h-5 w-5" />
+        <Plus className="h-5 w-5" />
+        <span>Add New Card</span>
       </button>
 
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-          <CreditCard className="h-8 w-8 text-primary-500" />
-          Add Payment Method
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300 mt-2">
-          Add a credit or debit card to make payments on TaskZing
-        </p>
-      </div>
-
-      {/* Payment Card */}
-      <Card className="dark:bg-darkBlue-203 dark:border-gray-700">
-        <CardContent className="p-6 md:p-8">
-          {/* Accepted Cards */}
-          <div className="flex items-center gap-3 mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Accepted:</span>
-            <div className="flex items-center gap-2">
-              <div className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded text-xs font-bold text-blue-700 dark:text-blue-300">
-                VISA
+      {/* Payment Methods List */}
+      {loading ? (
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          Loading payment methods...
+        </div>
+      ) : paymentMethods.length === 0 ? (
+        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+          <CreditCard className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+          <p>No payment methods added yet</p>
+          <p className="text-sm mt-2">Click "Add New Card" to add a payment method</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {paymentMethods.map((method) => (
+            <div
+              key={method.id}
+              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center justify-between"
+            >
+              <div className="flex items-center gap-4 flex-1">
+                <div className="h-12 w-12 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                  <CreditCard className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {getCardIcon(method.cardBrand)}
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-400">
+                      •••• {method.last4}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Expires {formatExpiryDate(method.expMonth, method.expYear)}
+                  </p>
+                </div>
               </div>
-              <div className="px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded text-xs font-bold text-red-600 dark:text-red-300">
-                MasterCard
-              </div>
-              <div className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded text-xs font-bold text-blue-600 dark:text-blue-300">
-                AMEX
-              </div>
-              <div className="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 rounded text-xs font-bold text-orange-600 dark:text-orange-300">
-                Discover
-              </div>
+              <button
+                onClick={() => handleDelete(method.paymentMethodId, method.id)}
+                disabled={deletingId === method.id}
+                className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
+                aria-label="Delete payment method"
+              >
+                {deletingId === method.id ? (
+                  <div className="h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Trash2 className="h-5 w-5" />
+                )}
+              </button>
             </div>
-          </div>
+          ))}
+        </div>
+      )}
 
-          {/* Stripe Elements Form */}
-          <Elements stripe={stripePromise}>
-            <PaymentForm />
-          </Elements>
-        </CardContent>
-      </Card>
-
-      {/* Security Badges */}
-      <div className="mt-6 flex items-center justify-center gap-6 text-gray-500 dark:text-gray-400">
-        <div className="flex items-center gap-2">
-          <Lock className="h-4 w-4" />
-          <span className="text-xs">SSL Encrypted</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Shield className="h-4 w-4" />
-          <span className="text-xs">PCI Compliant</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium">Powered by</span>
-          <span className="text-xs font-bold text-[#635bff]">Stripe</span>
-        </div>
-      </div>
+      {/* Add Payment Form Modal */}
+      {showAddForm && (
+        <Elements stripe={stripePromise}>
+          <AddPaymentForm
+            onClose={() => setShowAddForm(false)}
+            onSuccess={() => {
+              loadPaymentMethods();
+            }}
+          />
+        </Elements>
+      )}
     </div>
   );
 }
-
