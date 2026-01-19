@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Search, Bookmark, Filter, ChevronDown, MapPin, MessageSquare, X, Plus, Check } from "lucide-react";
 import {
   getAllShowcases,
@@ -669,110 +670,22 @@ export default function ClientExplorePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {filteredAndSortedShowcases.map((item) => {
-              const imageUrl = item.imageUrls?.[0] || fallbackImage;
               const skills = item.skills
                 ? item.skills.split(",").map((s) => s.trim()).filter(Boolean)
                 : item.tags || [];
               const meta = item.userId ? userMeta[item.userId] : undefined;
 
               return (
-                <div
+                <ShowcaseTile
                   key={item.id || item.title}
-                  className="bg-white dark:bg-darkBlue-203 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
-                >
-                  {/* Image Section */}
-                  <div className="relative h-40 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800">
-                    <img
-                      src={imageUrl}
-                      alt={item.title || "Showcase"}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = fallbackImage;
-                      }}
-                    />
-                    {/* Pagination Dots */}
-                    {item.imageUrls && item.imageUrls.length > 1 && (
-                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
-                        {item.imageUrls.slice(0, 3).map((_, index) => (
-                          <div
-                            key={index}
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              index === 0 ? "bg-red-500 w-3" : "bg-white/50"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-3">
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {skills.slice(0, 2).map((skill, idx) => (
-                        <span
-                          key={`${skill}-${idx}`}
-                          className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                        >
-                          {skill.length > 15 ? `${skill.substring(0, 15)}...` : skill}
-                        </span>
-                      ))}
-                      {item.postingAs === "company" && item.companyName && (
-                        <span className="px-2.5 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded-full text-xs font-medium">
-                          Company
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Title */}
-                    <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-1">
-                      {item.title || "Untitled"}
-                    </h3>
-
-                    {/* Location */}
-                    <div className="flex items-start gap-1.5 mb-2">
-                      <MapPin className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 mt-0.5 flex-shrink-0" />
-                      <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-                        {item.location || meta?.location || "Remote / Unspecified"}
-                      </p>
-                    </div>
-
-                    {/* Provider Name */}
-                    {meta?.name && (
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-1">
-                        by {meta.name}
-                      </p>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleSaveToggle(item)}
-                        disabled={savingShowcaseId === item.id}
-                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          item.id && savedShowcaseIds.has(item.id)
-                            ? "bg-primary-500 dark:bg-primary-600 text-white border border-primary-600 dark:border-primary-700 hover:bg-primary-600 dark:hover:bg-primary-700"
-                            : "bg-white dark:bg-darkBlue-003 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                      >
-                        <Bookmark
-                          className={`h-4 w-4 ${
-                            item.id && savedShowcaseIds.has(item.id) ? "fill-white" : ""
-                          }`}
-                        />
-                        {savingShowcaseId === item.id
-                          ? "Saving..."
-                          : item.id && savedShowcaseIds.has(item.id)
-                          ? "Saved"
-                          : "Save"}
-                      </button>
-                      <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors">
-                        <MessageSquare className="h-4 w-4" />
-                        Contact
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  item={item}
+                  meta={meta}
+                  skills={skills}
+                  onSaveToggle={handleSaveToggle}
+                  savedShowcaseIds={savedShowcaseIds}
+                  savingShowcaseId={savingShowcaseId}
+                  onNavigate={(id) => router.push(`/work-details/${id}`)}
+                />
               );
             })}
           </div>

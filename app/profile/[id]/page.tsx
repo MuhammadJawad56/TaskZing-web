@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Edit, Star, Calendar, MapPin, QrCode, X } from "lucide-react";
+import { Edit, Star, Calendar, MapPin, QrCode, X, MessageSquare, Bookmark } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
@@ -13,6 +13,9 @@ import { getUserById } from "@/lib/firebase/users";
 import { getJobsByClientId } from "@/lib/firebase/jobs";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { useTheme } from "@/lib/contexts/ThemeContext";
+import { getOrCreateChatRoom } from "@/lib/firebase/messages";
+import { collection, query, where, getDocs, addDoc, deleteDoc, Timestamp, orderBy } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
 import { Task } from "@/lib/types/task";
 import { User } from "@/lib/types/user";
 
@@ -28,6 +31,10 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const [showQRModal, setShowQRModal] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
+  const [bookmarkedProfiles, setBookmarkedProfiles] = useState<User[]>([]);
+  const [loadingBookmarks, setLoadingBookmarks] = useState(false);
 
   const userId = params?.id as string;
   const isOwnProfile = currentUser?.uid === userId || userData?.uid === userId;
@@ -49,6 +56,11 @@ export default function ProfilePage() {
         // Fetch jobs posted by this user
         const userJobs = await getJobsByClientId(userId);
         setJobs(userJobs);
+
+        // Check if profile is bookmarked
+        if (!isOwnProfile && currentUser) {
+          checkBookmarkStatus();
+        }
       } catch (error) {
         console.error("Error fetching profile data:", error);
       } finally {
@@ -57,7 +69,112 @@ export default function ProfilePage() {
     }
 
     fetchData();
-  }, [userId, router]);
+  }, [userId, router, isOwnProfile, currentUser]);
+
+  // Reset to "all" tab if viewing someone else's profile and saved tab is active
+  useEffect(() => {
+    if (!isOwnProfile && activeTab === "saved") {
+      setActiveTab("all");
+    }
+  }, [isOwnProfile, activeTab]);
+
+  // Load bookmarked profiles when viewing own profile and saved tab is active
+  useEffect(() => {
+    if (isOwnProfile && activeTab === "saved" && currentUser) {
+      loadBookmarkedProfiles();
+    }
+  }, [isOwnProfile, activeTab, currentUser]);
+
+  const checkBookmarkStatus = async () => {
+    if (!currentUser || !userId) return;
+
+    try {
+      const q = query(
+        collection(db, "profileBookmarks"),
+        where("bookmarkedBy", "==", currentUser.uid),
+        where("profileUserId", "==", userId)
+      );
+      const snapshot = await getDocs(q);
+      setIsBookmarked(!snapshot.empty);
+    } catch (error) {
+      console.error("Error checking bookmark status:", error);
+    }
+  };
+
+  const handleChat = async () => {
+    if (!currentUser || !profileUser) {
+      alert("Please sign in to send a message.");
+      return;
+    }
+
+    try {
+      const chatRoomId = await getOrCreateChatRoom([currentUser.uid, profileUser.uid]);
+      router.push(`/chats/${chatRoomId}`);
+    } catch (error) {
+      console.error("Error creating chat room:", error);
+      alert("Failed to start chat. Please try again.");
+    }
+  };
+
+  const handleBookmark = async () => {
+    if (!currentUser || !userId) {
+      alert("Please sign in to bookmark profiles.");
+      return;
+    }
+
+    setIsBookmarking(true);
+    try {
+      if (isBookmarked) {
+        // Remove bookmark
+        const q = query(
+          collection(db, "profileBookmarks"),
+          where("bookmarkedBy", "==", currentUser.uid),
+          where("profileUserId", "==", userId)
+        );
+        const snapshot = await getDocs(q);
+        const deletePromises = snapshot.docs.map((doc) => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
+        setIsBookmarked(false);
+      } else {
+        // Add bookmark
+        await addDoc(collection(db, "profileBookmarks"), {
+          bookmarkedBy: currentUser.uid,
+          profileUserId: userId,
+          createdAt: Timestamp.now(),
+        });
+        setIsBookmarked(true);
+      }
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+      alert("Failed to bookmark profile. Please try again.");
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
+
+  const loadBookmarkedProfiles = async () => {
+    if (!currentUser) return;
+
+    setLoadingBookmarks(true);
+    try {
+      const q = query(
+        collection(db, "profileBookmarks"),
+        where("bookmarkedBy", "==", currentUser.uid),
+        orderBy("createdAt", "desc")
+      );
+      const snapshot = await getDocs(q);
+      const profileIds = snapshot.docs.map((doc) => doc.data().profileUserId);
+
+      // Fetch user data for each bookmarked profile
+      const profilePromises = profileIds.map((id) => getUserById(id));
+      const profiles = await Promise.all(profilePromises);
+      setBookmarkedProfiles(profiles.filter((p) => p !== null) as User[]);
+    } catch (error) {
+      console.error("Error loading bookmarked profiles:", error);
+    } finally {
+      setLoadingBookmarks(false);
+    }
+  };
 
   // Filter jobs based on active tab
   const filteredJobs = React.useMemo(() => {
@@ -149,7 +266,7 @@ export default function ProfilePage() {
       count: jobs.filter((j) => j.completionStatus === "completed").length,
     },
     { id: "reviews" as TabType, label: "Reviews", count: 0 },
-    { id: "saved" as TabType, label: "Saved", count: 0 },
+    ...(isOwnProfile ? [{ id: "saved" as TabType, label: "Saved", count: bookmarkedProfiles.length }] : []),
   ];
 
   return (
@@ -173,7 +290,7 @@ export default function ProfilePage() {
             </div>
 
             {/* User Info */}
-            <div className="flex-1">
+              <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl font-bold text-theme-primaryText">
                   {profileUser?.fullName || profileUser?.username || profileUser?.email?.split("@")[0] || "User"}
@@ -185,12 +302,40 @@ export default function ProfilePage() {
                 >
                   <QrCode className="h-5 w-5 text-theme-accent4" />
                 </button>
-                {isOwnProfile && (
+                {isOwnProfile ? (
                   <Link href={`/edit-profile?returnTo=/profile/${userId}`} className="-ml-1">
                     <button className="px-4 py-2 rounded-full bg-gray-100 text-blue-600 font-semibold hover:bg-gray-200 transition-colors shadow-sm">
                       Edit Profile
                     </button>
                   </Link>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleChat}
+                      className="w-12 h-12 rounded-2xl bg-red-500 hover:bg-red-600 border-2 border-red-600 flex items-center justify-center transition-colors shadow-sm"
+                      aria-label="Send Message"
+                    >
+                      <MessageSquare className="h-5 w-5 text-white" />
+                    </button>
+                    <button
+                      onClick={handleBookmark}
+                      disabled={isBookmarking}
+                      className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center transition-colors shadow-sm ${
+                        isBookmarked
+                          ? "bg-red-500 border-red-600 hover:bg-red-600"
+                          : "bg-gray-100 border-gray-300 hover:bg-gray-200 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600"
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      aria-label={isBookmarked ? "Remove Bookmark" : "Bookmark Profile"}
+                    >
+                      <Bookmark
+                        className={`h-5 w-5 ${
+                          isBookmarked
+                            ? "text-white fill-white"
+                            : "text-gray-600 dark:text-gray-300"
+                        }`}
+                      />
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -209,7 +354,7 @@ export default function ProfilePage() {
                   {profileUser?.totalRating?.toFixed(1) || "0.0"} (
                   {profileUser?.totalReviews || 0} Reviews)
                 </span>
-              </div>
+            </div>
 
               {/* Member Since */}
               <div className="flex items-center gap-2 text-theme-accent4 mb-2">
@@ -235,9 +380,9 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
-          </div>
-        </div>
-        )}
+                </div>
+              </div>
+            )}
 
         {/* Navigation Tabs */}
         <div className="border-b border-theme-accent2 mb-6">
@@ -320,7 +465,7 @@ export default function ProfilePage() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div>
+              <div>
                             <div className="font-medium text-theme-primaryText">
                               {job.title}
                             </div>
@@ -360,10 +505,62 @@ export default function ProfilePage() {
 
         {/* Saved Tab */}
         {activeTab === "saved" && (
-          <div className="bg-white rounded-lg p-6">
-            <p className="text-theme-accent4 text-center py-8">
-              No saved items yet
-            </p>
+          <div className="bg-white rounded-lg overflow-hidden">
+            {loadingBookmarks ? (
+              <div className="p-8 text-center text-theme-accent4">Loading saved profiles...</div>
+            ) : bookmarkedProfiles.length === 0 ? (
+              <div className="p-8 text-center text-theme-accent4">
+                No saved profiles yet
+              </div>
+            ) : (
+              <div className="divide-y divide-theme-accent2">
+                {bookmarkedProfiles.map((user) => (
+                  <div
+                    key={user.uid}
+                    onClick={() => router.push(`/profile/${user.uid}`)}
+                    className="p-6 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors flex items-center gap-4"
+                  >
+                    <div className="h-16 w-16 rounded-full bg-pink-200 text-pink-700 flex items-center justify-center text-xl font-medium overflow-hidden flex-shrink-0">
+                      {user.photoUrl ? (
+                        <img
+                          src={user.photoUrl}
+                          alt={user.fullName || user.username || "User"}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span>{getInitials(user.fullName || user.username || user.email?.split("@")[0] || "User")}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold text-theme-primaryText mb-1">
+                        {user.fullName || user.username || user.email?.split("@")[0] || "User"}
+                      </h3>
+                      {user.location && (
+                        <div className="flex items-center gap-2 text-theme-accent4 mb-1">
+                          <MapPin className="h-3 w-3" />
+                          <span className="text-sm">{user.location}</span>
+                        </div>
+                      )}
+                      {user.description && (
+                        <p className="text-sm text-theme-accent4 line-clamp-2">
+                          {user.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {user.totalRating > 0 && (
+                        <div className="flex items-center gap-1 text-theme-accent4">
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span className="text-sm">
+                            {user.totalRating.toFixed(1)} ({user.totalReviews || 0})
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -459,7 +656,7 @@ export default function ProfilePage() {
               </div>
             </div>
           </>
-        )}
+            )}
 
       </div>
     </DashboardLayout>
