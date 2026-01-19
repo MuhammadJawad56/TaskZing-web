@@ -48,6 +48,25 @@ function timestampToISO(timestamp: any): string {
   return new Date().toISOString();
 }
 
+// Helper function to safely extract text from various formats
+function extractText(value: any): string {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "object") {
+    // Handle object with text property: {text: "..."}
+    if (value.text && typeof value.text === "string") {
+      return value.text;
+    }
+    // Handle other common text field names
+    if (value.message && typeof value.message === "string") return value.message;
+    if (value.content && typeof value.content === "string") return value.content;
+    // If it's an object but no text field, return empty string
+    return "";
+  }
+  // For other types, convert to string
+  return String(value);
+}
+
 // Helper to get user data with caching
 const userCache = new Map<string, { fullName: string; photoUrl?: string }>();
 
@@ -363,7 +382,7 @@ export async function getChatRoomsByUserId(
             chatRoomId: docSnap.id,
             senderId: lm.senderId || lm.sender || "",
             type: lm.type || "text",
-            text: lm.text || lm.message || lm.content || "",
+            text: extractText(lm.text || lm.message || lm.content),
             status: lm.status || "sent",
             timestamp: timestampToISO(lm.timestamp || lm.createdAt),
             deletedForEveryone: lm.deletedForEveryone || false,
@@ -376,7 +395,7 @@ export async function getChatRoomsByUserId(
             chatRoomId: docSnap.id,
             senderId: data.lastMessageSenderId || "",
             type: "text",
-            text: data.lastMessageText,
+            text: extractText(data.lastMessageText),
             status: "sent",
             timestamp: timestampToISO(data.lastMessageAt || data.updatedAt),
             deletedForEveryone: false,
@@ -460,7 +479,7 @@ export async function getMessagesByChatRoomId(
         processedIds.add(docSnap.id);
 
         const data = docSnap.data();
-        if (data.deletedForEveryone === true) continue;
+        // Don't skip deleted messages - we'll display them as "This message was deleted"
 
         const message: MessageWithSender = {
           messageId: docSnap.id,
@@ -468,7 +487,7 @@ export async function getMessagesByChatRoomId(
           chatRoomId: data.chatRoomId || chatRoomId,
           senderId: data.senderId || data.sender || data.userId || "",
           type: data.type || "text",
-          text: data.text || data.message || data.content,
+          text: extractText(data.text || data.message || data.content),
           mediaUrl: data.mediaUrl || data.media || data.imageUrl,
           thumbnailUrl: data.thumbnailUrl || data.thumbnail,
           fileName: data.fileName,
@@ -485,7 +504,7 @@ export async function getMessagesByChatRoomId(
           deletedAt: data.deletedAt ? timestampToISO(data.deletedAt) : undefined,
           deletedForEveryone: data.deletedForEveryone || false,
           jobId: data.jobId,
-          metadata: data.metadata,
+          metadata: { ...data.metadata, deletedFor: data.deletedFor || [] },
           createdAt: timestampToISO(data.createdAt || data.timestamp),
           updatedAt: timestampToISO(data.updatedAt || data.timestamp),
         };
@@ -536,7 +555,7 @@ export async function getMessagesByChatRoomId(
         // Filter to only this chat room
         if (data.chatRoomId !== chatRoomId) continue;
         if (processedIds.has(docSnap.id)) continue;
-        if (data.deletedForEveryone === true) continue;
+        // Don't skip deleted messages - we'll display them as "This message was deleted"
 
         processedIds.add(docSnap.id);
 
@@ -546,7 +565,7 @@ export async function getMessagesByChatRoomId(
           chatRoomId: data.chatRoomId || chatRoomId,
           senderId: data.senderId || data.sender || data.userId || "",
           type: data.type || "text",
-          text: data.text || data.message || data.content,
+          text: extractText(data.text || data.message || data.content),
           mediaUrl: data.mediaUrl || data.media || data.imageUrl,
           thumbnailUrl: data.thumbnailUrl || data.thumbnail,
           fileName: data.fileName,
@@ -563,7 +582,7 @@ export async function getMessagesByChatRoomId(
           deletedAt: data.deletedAt ? timestampToISO(data.deletedAt) : undefined,
           deletedForEveryone: data.deletedForEveryone || false,
           jobId: data.jobId,
-          metadata: data.metadata,
+          metadata: { ...data.metadata, deletedFor: data.deletedFor || [] },
           createdAt: timestampToISO(data.createdAt || data.timestamp),
           updatedAt: timestampToISO(data.updatedAt || data.timestamp),
         };
@@ -723,7 +742,7 @@ export function subscribeToMessages(
             const messages: MessageWithSender[] = [];
             for (const docSnap of snapshot.docs) {
               const data = docSnap.data();
-              if (data.deletedForEveryone === true) continue;
+              // Don't skip deleted messages - we'll display them as "This message was deleted"
 
               const message: MessageWithSender = {
                 messageId: docSnap.id,
@@ -796,7 +815,7 @@ export function subscribeToMessages(
         const messages: MessageWithSender[] = [];
         for (const docSnap of snapshot.docs) {
           const data = docSnap.data();
-          if (data.deletedForEveryone === true) continue;
+          // Don't skip deleted messages - we'll display them as "This message was deleted"
           if (data.chatRoomId !== chatRoomId) continue;
 
           const message: MessageWithSender = {
@@ -900,7 +919,7 @@ export function subscribeToChatRooms(
               chatRoomId: docSnap.id,
               senderId: lm.senderId || lm.sender || "",
               type: lm.type || "text",
-              text: lm.text || lm.message || lm.content || "",
+              text: extractText(lm.text || lm.message || lm.content),
               status: lm.status || "sent",
               timestamp: timestampToISO(lm.timestamp || lm.createdAt),
               deletedForEveryone: lm.deletedForEveryone || false,
@@ -913,7 +932,7 @@ export function subscribeToChatRooms(
               chatRoomId: docSnap.id,
               senderId: data.lastMessageSenderId || "",
               type: "text",
-              text: data.lastMessageText,
+              text: extractText(data.lastMessageText),
               status: "sent",
               timestamp: timestampToISO(data.lastMessageAt || data.updatedAt),
               deletedForEveryone: false,
@@ -1038,4 +1057,153 @@ export async function getOrCreateChatRoom(
   }
 
   throw new Error("Unable to create chat room (missing permissions).");
+}
+
+// Delete message for me (only removes from current user's view)
+export async function deleteMessageForMe(
+  chatRoomId: string,
+  messageId: string,
+  userId: string
+): Promise<void> {
+  const roomCollection = await detectRoomCollection(chatRoomId);
+  
+  // Try subcollection first
+  if (roomCollection) {
+    try {
+      const messageRef = doc(
+        db,
+        roomCollection,
+        chatRoomId,
+        COLLECTION_NAMES.messages,
+        messageId
+      );
+      const messageDoc = await getDoc(messageRef);
+      
+      if (messageDoc.exists()) {
+        const data = messageDoc.data();
+        const deletedFor = data.deletedFor || [];
+        
+        if (!deletedFor.includes(userId)) {
+          await updateDoc(messageRef, {
+            deletedFor: [...deletedFor, userId],
+            updatedAt: serverTimestamp(),
+          });
+        }
+        return;
+      }
+    } catch (error) {
+      console.warn("Could not delete from subcollection:", error);
+    }
+  }
+  
+  // Fallback: top-level messages collection
+  try {
+    const messageRef = doc(db, COLLECTION_NAMES.messages, messageId);
+    const messageDoc = await getDoc(messageRef);
+    
+    if (messageDoc.exists()) {
+      const data = messageDoc.data();
+      if (data.chatRoomId !== chatRoomId) {
+        throw new Error("Message does not belong to this chat room");
+      }
+      
+      const deletedFor = data.deletedFor || [];
+      if (!deletedFor.includes(userId)) {
+        await updateDoc(messageRef, {
+          deletedFor: [...deletedFor, userId],
+          updatedAt: serverTimestamp(),
+        });
+      }
+    }
+  } catch (error: any) {
+    console.error("Error deleting message for me:", error);
+    throw new Error(`Failed to delete message: ${error.message}`);
+  }
+}
+
+// Delete message for everyone (removes for all participants)
+export async function deleteMessageForEveryone(
+  chatRoomId: string,
+  messageId: string,
+  userId: string
+): Promise<void> {
+  const roomCollection = await detectRoomCollection(chatRoomId);
+  
+  // Try subcollection first
+  if (roomCollection) {
+    try {
+      const messageRef = doc(
+        db,
+        roomCollection,
+        chatRoomId,
+        COLLECTION_NAMES.messages,
+        messageId
+      );
+      const messageDoc = await getDoc(messageRef);
+      
+      if (messageDoc.exists()) {
+        const data = messageDoc.data();
+        
+        // Only sender can delete for everyone
+        if (data.senderId !== userId) {
+          throw new Error("Only the sender can delete a message for everyone");
+        }
+        
+        // Check if message was sent within last hour (WhatsApp-like limit)
+        const messageTime = data.timestamp?.toDate?.() || new Date(data.timestamp);
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        
+        if (messageTime < oneHourAgo) {
+          throw new Error("Messages can only be deleted for everyone within 1 hour of sending");
+        }
+        
+        await updateDoc(messageRef, {
+          deletedForEveryone: true,
+          text: "This message was deleted",
+          deletedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        return;
+      }
+    } catch (error: any) {
+      if (error.message.includes("Only the sender") || error.message.includes("within 1 hour")) {
+        throw error;
+      }
+      console.warn("Could not delete from subcollection:", error);
+    }
+  }
+  
+  // Fallback: top-level messages collection
+  try {
+    const messageRef = doc(db, COLLECTION_NAMES.messages, messageId);
+    const messageDoc = await getDoc(messageRef);
+    
+    if (messageDoc.exists()) {
+      const data = messageDoc.data();
+      if (data.chatRoomId !== chatRoomId) {
+        throw new Error("Message does not belong to this chat room");
+      }
+      
+      if (data.senderId !== userId) {
+        throw new Error("Only the sender can delete a message for everyone");
+      }
+      
+      const messageTime = data.timestamp?.toDate?.() || new Date(data.timestamp);
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      
+      if (messageTime < oneHourAgo) {
+        throw new Error("Messages can only be deleted for everyone within 1 hour of sending");
+      }
+      
+      await updateDoc(messageRef, {
+        deletedForEveryone: true,
+        text: "This message was deleted",
+        deletedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    }
+  } catch (error: any) {
+    console.error("Error deleting message for everyone:", error);
+    throw error;
+  }
 }

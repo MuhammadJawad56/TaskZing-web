@@ -43,7 +43,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isOwn }) => {
               : "bg-theme-accent2 text-theme-primaryText"
           )}
         >
-          <p className="text-sm whitespace-pre-wrap">{message.text || ""}</p>
+          <p className="text-sm whitespace-pre-wrap">
+            {typeof message.text === "string" ? message.text : message.text?.text || ""}
+          </p>
         </div>
         <span className="text-xs text-theme-accent4 mt-1 block">
           {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}

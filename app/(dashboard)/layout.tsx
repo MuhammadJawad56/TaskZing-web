@@ -10,7 +10,7 @@ export default function DashboardRootLayout({
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <DashboardLayout>{children}</DashboardLayout>
+      <DashboardLayout>{children}</DashboardLayout>
       </LanguageProvider>
     </ThemeProvider>
   );

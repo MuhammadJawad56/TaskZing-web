@@ -94,7 +94,7 @@ export default function EditProfilePage() {
       if (returnTo) {
         router.push(returnTo);
       } else {
-        router.push("/my-profile");
+      router.push("/my-profile");
       }
     }, 1000);
   };
@@ -166,11 +166,11 @@ export default function EditProfilePage() {
                     Name
                   </label>
                   <input
-                    type="text"
-                    value={formData.fullName}
+                type="text"
+                value={formData.fullName}
                     readOnly
                     className="w-full h-10 rounded-lg bg-gray-100 border-0 px-4 text-theme-primaryText cursor-not-allowed"
-                  />
+              />
                 </div>
 
                 {/* Email Field */}
@@ -183,7 +183,7 @@ export default function EditProfilePage() {
                     value={formData.email}
                     readOnly
                     className="w-full h-10 rounded-lg bg-gray-100 border-0 px-4 text-theme-primaryText cursor-not-allowed"
-                  />
+              />
                 </div>
 
                 {/* Location Field */}
@@ -193,11 +193,11 @@ export default function EditProfilePage() {
                   </label>
                   <div className="relative">
                     <input
-                      type="text"
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                type="text"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                       className="w-full h-10 rounded-lg bg-gray-100 border-0 px-4 pr-10 text-theme-primaryText focus:outline-none focus:ring-2 focus:ring-gray-300"
-                    />
+              />
                     <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                   </div>
                 </div>
@@ -275,7 +275,7 @@ export default function EditProfilePage() {
                     onClick={() => router.back()}
                     className="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition-colors"
                   >
-                    Cancel
+                  Cancel
                   </button>
                   <button
                     type="submit"
@@ -284,8 +284,8 @@ export default function EditProfilePage() {
                   >
                     {isLoading ? "Saving..." : "Save Changes"}
                   </button>
-                </div>
-              </form>
+              </div>
+            </form>
             </div>
           </div>
         </div>

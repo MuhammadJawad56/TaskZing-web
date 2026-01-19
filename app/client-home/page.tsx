@@ -565,7 +565,7 @@ export default function ClientHomePage() {
           {/* Mobile View - Stacked Layout */}
           <div className="lg:hidden space-y-3">
             {/* First Row: Near me, Search, Map */}
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={handleNearMe}

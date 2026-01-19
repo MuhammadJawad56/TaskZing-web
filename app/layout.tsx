@@ -67,11 +67,11 @@ export default function RootLayout({
         />
         <ThemeProvider>
           <LanguageProvider>
-            <AuthProvider>
-              <Header />
-              <main className="flex-1">{children}</main>
-              <ConditionalFooter />
-            </AuthProvider>
+          <AuthProvider>
+            <Header />
+            <main className="flex-1">{children}</main>
+            <ConditionalFooter />
+          </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>

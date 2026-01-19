@@ -27,13 +27,38 @@ export async function getUserById(uid: string): Promise<User | null> {
                      data.email?.split("@")[0] || 
                      "User";
     
+    // Helper to validate and normalize photo URL
+    const normalizePhotoUrl = (url: any): string | null => {
+      if (!url) return null;
+      const urlStr = typeof url === "string" ? url.trim() : String(url).trim();
+      return urlStr.length > 0 ? urlStr : null;
+    };
+    
+    // Get photo URL with multiple fallbacks - check various field names
+    const photoUrl = normalizePhotoUrl(
+      data.photoURL || 
+      data.photoUrl || 
+      data.avatar || 
+      data.profileImage ||
+      data.profilePicture ||
+      data.profilePhoto ||
+      data.imageUrl ||
+      data.image ||
+      (Array.isArray(data.photos) && data.photos.length > 0 ? data.photos[0] : null)
+    );
+    
+    // Get photos array, ensuring it's an array of valid URLs
+    const photos = Array.isArray(data.photos) 
+      ? data.photos.map(normalizePhotoUrl).filter((url): url is string => url !== null)
+      : (photoUrl ? [photoUrl] : []);
+    
     return {
       id: userDoc.id,
       uid: userDoc.id,
       email: data.email || "",
       username: data.username,
       fullName: fullName,
-      photoUrl: data.photoURL || data.photoUrl || data.avatar || data.profileImage,
+      photoUrl: photoUrl || undefined,
       phoneNumber: data.phoneNumber || data.phone,
       role: data.role || data.currentRole || "client",
       currentRole: data.currentRole || data.role || "client",
@@ -41,7 +66,7 @@ export async function getUserById(uid: string): Promise<User | null> {
       latitude: data.latitude,
       longitude: data.longitude,
       description: data.description || data.bio,
-      photos: data.photos || [],
+      photos: photos,
       isVerified: data.isVerified || false,
       totalRating: data.totalRating || data.rating || 0,
       totalReviews: data.totalReviews || data.reviews || 0,

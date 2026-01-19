@@ -35,9 +35,23 @@ export default function ProfilePage() {
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [bookmarkedProfiles, setBookmarkedProfiles] = useState<User[]>([]);
   const [loadingBookmarks, setLoadingBookmarks] = useState(false);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   const userId = params?.id as string;
   const isOwnProfile = currentUser?.uid === userId || userData?.uid === userId;
+
+  // Helper to get photo URL with fallbacks
+  const getPhotoUrl = (user: User | null): string | null => {
+    if (!user) return null;
+    const url = user.photoUrl || user.photos?.[0] || null;
+    // Ensure it's a valid non-empty string
+    return (url && typeof url === "string" && url.trim().length > 0) ? url : null;
+  };
+
+  // Handle image load errors
+  const handleImageError = (userId: string) => {
+    setImageErrors((prev) => new Set(prev).add(userId));
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -157,7 +171,7 @@ export default function ProfilePage() {
       alert("Failed to bookmark profile. Please try again.");
     } finally {
       setIsBookmarking(false);
-    }
+}
   };
 
   const loadBookmarkedProfiles = async () => {
@@ -304,11 +318,13 @@ export default function ProfilePage() {
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
             {/* Avatar */}
             <div className="h-24 w-24 rounded-full bg-pink-200 text-pink-700 flex items-center justify-center text-2xl font-medium overflow-hidden">
-              {profileUser?.photoUrl ? (
+              {getPhotoUrl(profileUser) && !imageErrors.has(userId) ? (
                 <img
-                  src={profileUser?.photoUrl}
+                  src={getPhotoUrl(profileUser)!}
                   alt={profileUser?.fullName || profileUser?.username || profileUser?.email?.split("@")[0] || "User"}
                   className="w-full h-full object-cover"
+                  onError={() => handleImageError(userId)}
+                  loading="lazy"
                 />
               ) : (
                 <span>{getInitials(profileUser?.fullName || profileUser?.username || profileUser?.email?.split("@")[0] || "User")}</span>
@@ -479,11 +495,13 @@ export default function ProfilePage() {
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="h-8 w-8 rounded-full bg-pink-200 text-pink-700 flex items-center justify-center text-xs font-medium overflow-hidden">
-              {profileUser?.photoUrl ? (
+              {getPhotoUrl(profileUser) && !imageErrors.has(userId) ? (
                 <img
-                  src={profileUser?.photoUrl}
+                  src={getPhotoUrl(profileUser)!}
                   alt={profileUser?.fullName || profileUser?.username || profileUser?.email?.split("@")[0] || "User"}
                   className="w-full h-full object-cover"
+                  onError={() => handleImageError(userId)}
+                  loading="lazy"
                 />
               ) : (
                 <span>{getInitials(profileUser?.fullName || profileUser?.username || profileUser?.email?.split("@")[0] || "User")}</span>
@@ -547,11 +565,13 @@ export default function ProfilePage() {
                     className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                   >
                     <div className="h-12 w-12 rounded-full bg-red-200 text-red-700 flex items-center justify-center text-lg font-medium overflow-hidden flex-shrink-0">
-                      {profile.photoUrl ? (
+                      {getPhotoUrl(profile) && !imageErrors.has(profile.uid) ? (
                         <img
-                          src={profile.photoUrl}
+                          src={getPhotoUrl(profile)!}
                           alt={profile.fullName || profile.username || "User"}
                           className="w-full h-full object-cover"
+                          onError={() => handleImageError(profile.uid)}
+                          loading="lazy"
                         />
                       ) : (
                         <span>{getInitials(profile.fullName || profile.username || profile.email?.split("@")[0])}</span>
