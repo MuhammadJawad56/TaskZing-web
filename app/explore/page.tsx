@@ -52,6 +52,142 @@ const urgencyLevels = ["Any", "Urgent", "High", "Normal", "Low"];
 // Job status
 const jobStatuses = ["All", "Open", "In Progress"];
 
+// Job Card Component with Auto-sliding
+function JobCard({ job, onApply, getCategoryColor, formatPrice }: {
+  job: Task;
+  onApply: (job: Task) => void;
+  getCategoryColor: (category: string) => string;
+  formatPrice: (job: Task) => string;
+}) {
+  const router = useRouter();
+  const images = job.photos || [];
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Reset image index when job changes
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [job.jobId]);
+
+  // Auto-slide images if more than 1
+  useEffect(() => {
+    if (images.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [images.length, job.jobId]);
+
+  const imageUrl = images[currentImageIndex] || null;
+
+  return (
+    <div
+      onClick={() => router.push(`/job-details/${job.jobId}`)}
+      className="bg-white dark:bg-darkBlue-203 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow cursor-pointer"
+    >
+      {/* Image Section */}
+      <div className="relative h-40 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={job.title}
+            className="w-full h-full object-cover transition-opacity duration-500"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="text-red-500 text-2xl font-bold">Task</span>
+          </div>
+        )}
+        {/* Pagination Dots */}
+        {images.length > 1 && (
+          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
+            {images.slice(0, 3).map((_, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "h-1.5 rounded-full transition-all",
+                  index === currentImageIndex ? "bg-red-500 w-3" : "bg-white/50 w-1.5"
+                )}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-3" onClick={(e) => e.stopPropagation()}>
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2 mb-2">
+          {job.category && (
+            <span
+              className={cn(
+                "px-2.5 py-1 rounded-full text-xs font-medium",
+                getCategoryColor(job.category)
+              )}
+            >
+              {job.category.length > 15
+                ? `${job.category.substring(0, 15)}...`
+                : job.category}
+            </span>
+          )}
+          {job.urgency === "urgent" && (
+            <span className="px-2.5 py-1 bg-red-500 text-white rounded-full text-xs font-medium">
+              Urgent
+            </span>
+          )}
+          {job.jobType === "fixed" && job.estimatedDuration && (
+            <span className="px-2.5 py-1 bg-red-500 text-white rounded-full text-xs font-medium">
+              {job.estimatedDuration} Fixed hours
+            </span>
+          )}
+        </div>
+
+        {/* Title */}
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-1">
+          {job.title}
+        </h3>
+
+        {/* Location */}
+        <div className="flex items-start gap-1.5 mb-2">
+          <MapPin className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+            {job.address}
+          </p>
+        </div>
+
+        {/* Rate */}
+        <p className="text-red-500 font-semibold text-sm mb-3">
+          {formatPrice(job)}
+        </p>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              // Handle save bookmark
+            }}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-white dark:bg-darkBlue-003 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Bookmark className="h-4 w-4" />
+            Save
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onApply(job);
+            }}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+          >
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ExplorePage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -928,102 +1064,13 @@ export default function ExplorePage() {
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {filteredJobs.map((job) => (
-                <div
+                <JobCard
                   key={job.jobId}
-                  className="bg-white dark:bg-darkBlue-203 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
-                >
-                  {/* Image Section */}
-                  <div className="relative h-40 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800">
-                    {job.photos && job.photos.length > 0 ? (
-                      <img
-                        src={job.photos[0]}
-                        alt={job.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-red-500 text-2xl font-bold">Task</span>
-                      </div>
-                    )}
-                    {/* Pagination Dots */}
-                    {job.photos && job.photos.length > 1 && (
-                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
-                        {job.photos.slice(0, 3).map((_, index) => (
-                          <div
-                            key={index}
-                            className={cn(
-                              "w-1.5 h-1.5 rounded-full",
-                              index === 0 ? "bg-red-500 w-3" : "bg-white/50"
-                            )}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-3">
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {job.category && (
-                        <span
-                          className={cn(
-                            "px-2.5 py-1 rounded-full text-xs font-medium",
-                            getCategoryColor(job.category)
-                          )}
-                        >
-                          {job.category.length > 15
-                            ? `${job.category.substring(0, 15)}...`
-                            : job.category}
-                        </span>
-                      )}
-                      {job.urgency === "urgent" && (
-                        <span className="px-2.5 py-1 bg-red-500 text-white rounded-full text-xs font-medium">
-                          Urgent
-                        </span>
-                      )}
-                      {job.jobType === "fixed" && job.estimatedDuration && (
-                        <span className="px-2.5 py-1 bg-red-500 text-white rounded-full text-xs font-medium">
-                          {job.estimatedDuration} Fixed hours
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Title */}
-                    <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-1">
-                      {job.title}
-                    </h3>
-
-                    {/* Location */}
-                    <div className="flex items-start gap-1.5 mb-2">
-                      <MapPin className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 mt-0.5 flex-shrink-0" />
-                      <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-                        {job.address}
-                      </p>
-                    </div>
-
-                    {/* Rate */}
-                    <p className="text-red-500 font-semibold text-sm mb-3">
-                      {formatPrice(job)}
-                    </p>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      <button
-                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-white dark:bg-darkBlue-003 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <Bookmark className="h-4 w-4" />
-                        Save
-                      </button>
-                      <button
-                        onClick={() => openProposalModal(job)}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
-                      >
-                        Apply
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  job={job}
+                  onApply={openProposalModal}
+                  getCategoryColor={getCategoryColor}
+                  formatPrice={formatPrice}
+                />
               ))}
             </div>
           )}

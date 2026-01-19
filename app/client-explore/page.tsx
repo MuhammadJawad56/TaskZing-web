@@ -34,6 +34,148 @@ const dayPostedOptions = ["Any time", "Last 24 hours", "Last 7 days", "Last 30 d
 
 const fallbackImage = "/images/placeholder_image.png";
 
+// ShowcaseTile Component with Auto-sliding
+function ShowcaseTile({ item, meta, skills, onSaveToggle, savedShowcaseIds, savingShowcaseId, onNavigate, currentUserId }: {
+  item: ShowcaseItem;
+  meta?: { name?: string; location?: string; rating?: number };
+  skills: string[];
+  onSaveToggle: (item: ShowcaseItem) => void;
+  savedShowcaseIds: Set<string>;
+  savingShowcaseId: string | null;
+  onNavigate: (id: string) => void;
+  currentUserId?: string;
+}) {
+  const images = item.imageUrls || [];
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Auto-slide images if more than 1
+  useEffect(() => {
+    if (images.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    }, 3000); // Change image every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [images.length]);
+
+  const imageUrl = images[currentImageIndex] || fallbackImage;
+
+  return (
+    <div
+      onClick={() => {
+        if (item.id) {
+          onNavigate(item.id);
+        }
+      }}
+      className="bg-white dark:bg-darkBlue-203 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow cursor-pointer"
+    >
+      {/* Image Section */}
+      <div className="relative h-40 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800">
+        <img
+          src={imageUrl}
+          alt={item.title || "Showcase"}
+          className="w-full h-full object-cover transition-opacity duration-500"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = fallbackImage;
+          }}
+        />
+        {/* Pagination Dots */}
+        {images.length > 1 && (
+          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
+            {images.slice(0, 3).map((_, index) => (
+              <div
+                key={index}
+                className={`h-1.5 rounded-full transition-all ${
+                  index === currentImageIndex ? "bg-red-500 w-3" : "bg-white/50 w-1.5"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-3">
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2 mb-2">
+          {skills.slice(0, 2).map((skill, idx) => (
+            <span
+              key={`${skill}-${idx}`}
+              className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+            >
+              {skill.length > 15 ? `${skill.substring(0, 15)}...` : skill}
+            </span>
+          ))}
+          {item.postingAs === "company" && item.companyName && (
+            <span className="px-2.5 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded-full text-xs font-medium">
+              Company
+            </span>
+          )}
+        </div>
+
+        {/* Title */}
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-1">
+          {item.title || "Untitled"}
+        </h3>
+
+        {/* Location */}
+        <div className="flex items-start gap-1.5 mb-2">
+          <MapPin className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+            {item.location || meta?.location || "Remote / Unspecified"}
+          </p>
+        </div>
+
+        {/* Provider Name */}
+        {meta?.name && (
+          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-1">
+            by {meta.name}
+          </p>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => onSaveToggle(item)}
+            disabled={savingShowcaseId === item.id}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              item.id && savedShowcaseIds.has(item.id)
+                ? "bg-primary-500 dark:bg-primary-600 text-white border border-primary-600 dark:border-primary-700 hover:bg-primary-600 dark:hover:bg-primary-700"
+                : "bg-white dark:bg-darkBlue-003 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            <Bookmark
+              className={`h-4 w-4 ${
+                item.id && savedShowcaseIds.has(item.id) ? "fill-white" : ""
+              }`}
+            />
+            {savingShowcaseId === item.id
+              ? "Saving..."
+              : item.id && savedShowcaseIds.has(item.id)
+              ? "Saved"
+              : "Save"}
+          </button>
+          {currentUserId && item.userId === currentUserId ? (
+            <button
+              disabled
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Your Work
+            </button>
+          ) : (
+            <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors">
+              <MessageSquare className="h-4 w-4" />
+              Contact
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ClientExplorePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showcases, setShowcases] = useState<ShowcaseItem[]>([]);
@@ -685,6 +827,7 @@ export default function ClientExplorePage() {
                   savedShowcaseIds={savedShowcaseIds}
                   savingShowcaseId={savingShowcaseId}
                   onNavigate={(id) => router.push(`/work-details/${id}`)}
+                  currentUserId={user?.uid}
                 />
               );
             })}

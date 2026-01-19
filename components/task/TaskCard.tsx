@@ -35,7 +35,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, showClient = false, cl
   };
 
   return (
-    <Link href={`/task/${task.jobId}`}>
+    <Link href={`/job-details/${task.jobId}`}>
       <Card className={cn("hover:shadow-lg transition-shadow cursor-pointer h-full", className)}>
         <CardContent className="p-6">
           <div className="flex items-start justify-between mb-3">

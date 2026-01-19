@@ -24,7 +24,7 @@ import { useTheme } from "@/lib/contexts/ThemeContext";
 const fallbackImage = "/images/placeholder_image.png";
 
 // Showcase Tile Component with Auto-sliding
-function ShowcaseTile({ item, meta, skills, onSaveToggle, savedShowcaseIds, savingShowcaseId, onNavigate }: {
+function ShowcaseTile({ item, meta, skills, onSaveToggle, savedShowcaseIds, savingShowcaseId, onNavigate, currentUserId }: {
   item: ShowcaseItem;
   meta?: { name?: string; location?: string };
   skills: string[];
@@ -32,6 +32,7 @@ function ShowcaseTile({ item, meta, skills, onSaveToggle, savedShowcaseIds, savi
   savedShowcaseIds: Set<string>;
   savingShowcaseId: string | null;
   onNavigate: (id: string) => void;
+  currentUserId?: string;
 }) {
   const images = item.imageUrls || [];
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -144,10 +145,20 @@ function ShowcaseTile({ item, meta, skills, onSaveToggle, savedShowcaseIds, savi
               ? "Saved"
               : "Save"}
           </button>
-          <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors">
-            <MessageSquare className="h-4 w-4" />
-            Contact
-          </button>
+          {currentUserId && item.userId === currentUserId ? (
+            <button
+              disabled
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Your Work
+            </button>
+          ) : (
+            <button className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors">
+              <MessageSquare className="h-4 w-4" />
+              Contact
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -706,6 +717,7 @@ export default function ClientHomePage() {
                   savedShowcaseIds={savedShowcaseIds}
                   savingShowcaseId={savingShowcaseId}
                   onNavigate={(id) => router.push(`/work-details/${id}`)}
+                  currentUserId={user?.uid}
                 />
               );
             })}
