@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/Header";
 import { ConditionalFooter } from "@/components/layout/ConditionalFooter";
 import { AuthProvider } from "@/lib/firebase/AuthContext";
 import { ThemeProvider } from "@/lib/contexts/ThemeContext";
+import { LanguageProvider } from "@/lib/contexts/LanguageContext";
 
 const inter = Inter({ 
   subsets: ["latin"], 
@@ -65,11 +66,13 @@ export default function RootLayout({
           }}
         />
         <ThemeProvider>
-          <AuthProvider>
-            <Header />
-            <main className="flex-1">{children}</main>
-            <ConditionalFooter />
-          </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <Header />
+              <main className="flex-1">{children}</main>
+              <ConditionalFooter />
+            </AuthProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

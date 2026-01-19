@@ -11,6 +11,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { ArrowLeft, CreditCard, Plus, Trash2, X } from "lucide-react";
 import { useAuth } from "@/lib/firebase/AuthContext";
+import { useLanguage } from "@/lib/contexts/LanguageContext";
 import { collection, query, where, getDocs, addDoc, deleteDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 
@@ -54,6 +55,7 @@ function AddPaymentForm({ onClose, onSuccess }: { onClose: () => void; onSuccess
   const stripe = useStripe();
   const elements = useElements();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
@@ -139,7 +141,7 @@ function AddPaymentForm({ onClose, onSuccess }: { onClose: () => void; onSuccess
       <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Add New Card</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">{t("payment.addNewCard")}</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
@@ -156,7 +158,7 @@ function AddPaymentForm({ onClose, onSuccess }: { onClose: () => void; onSuccess
               htmlFor="cardholderName"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
             >
-              Cardholder Name
+              {t("payment.cardholderName")}
             </label>
             <input
               type="text"
@@ -172,7 +174,7 @@ function AddPaymentForm({ onClose, onSuccess }: { onClose: () => void; onSuccess
           {/* Card Details */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Card Details
+              {t("payment.cardDetails")}
             </label>
             <div className="p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 transition-all focus-within:ring-2 focus-within:ring-red-500 focus-within:border-transparent">
               <CardElement options={cardElementOptions} onChange={handleCardChange} />
@@ -188,7 +190,7 @@ function AddPaymentForm({ onClose, onSuccess }: { onClose: () => void; onSuccess
             disabled={!stripe || isProcessing || !cardComplete}
             className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isProcessing ? "Saving..." : "Add Card"}
+            {isProcessing ? t("payment.saving") : t("payment.addCard")}
           </button>
         </form>
       </div>
@@ -200,6 +202,7 @@ function AddPaymentForm({ onClose, onSuccess }: { onClose: () => void; onSuccess
 export default function PaymentMethodPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -239,7 +242,7 @@ export default function PaymentMethodPage() {
   };
 
   const handleDelete = async (paymentMethodId: string, docId: string) => {
-    if (!confirm("Are you sure you want to delete this payment method?")) {
+    if (!confirm(t("payment.deleteConfirm"))) {
       return;
     }
 
@@ -283,14 +286,14 @@ export default function PaymentMethodPage() {
         >
           <ArrowLeft className="h-6 w-6 text-gray-900 dark:text-gray-100" />
         </button>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Payment Method</h1>
-        <button
-          onClick={() => router.push("/dashboard/settings")}
-          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">{t("payment.title")}</h1>
+          <button
+            onClick={() => router.push("/dashboard/settings")}
+            className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+          >
+            {t("common.cancel")}
+          </button>
+        </div>
 
       {/* Add New Card Button */}
       <button
@@ -299,19 +302,19 @@ export default function PaymentMethodPage() {
       >
         <CreditCard className="h-5 w-5" />
         <Plus className="h-5 w-5" />
-        <span>Add New Card</span>
+        <span>{t("payment.addNewCard")}</span>
       </button>
 
       {/* Payment Methods List */}
       {loading ? (
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          Loading payment methods...
+          {t("payment.loading")}
         </div>
       ) : paymentMethods.length === 0 ? (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
           <CreditCard className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-          <p>No payment methods added yet</p>
-          <p className="text-sm mt-2">Click "Add New Card" to add a payment method</p>
+          <p>{t("payment.noMethods")}</p>
+          <p className="text-sm mt-2">{t("payment.clickToAdd")}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -333,9 +336,9 @@ export default function PaymentMethodPage() {
                       •••• {method.last4}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Expires {formatExpiryDate(method.expMonth, method.expYear)}
-                  </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {t("payment.expires")} {formatExpiryDate(method.expMonth, method.expYear)}
+                      </p>
                 </div>
               </div>
               <button

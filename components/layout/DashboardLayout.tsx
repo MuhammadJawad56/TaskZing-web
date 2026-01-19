@@ -34,6 +34,7 @@ import {
 import { cn } from "@/lib/utils/cn";
 import { DashboardHeader } from "./DashboardHeader";
 import { useTheme } from "@/lib/contexts/ThemeContext";
+import { useLanguage } from "@/lib/contexts/LanguageContext";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { switchUserRole } from "@/lib/firebase/auth";
@@ -102,12 +103,31 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
   const [switchModalTarget, setSwitchModalTarget] = useState<"client" | "provider">("client");
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+  const { t } = useLanguage();
   const router = useRouter();
   const { user, userData } = useAuth();
   const currentRole = userData?.currentRole || userData?.role || "provider";
   const userId = user?.uid || userData?.uid || "";
-  const desktopItems = currentRole === "client" ? getClientDesktopNavItems(userId) : getDesktopNavItems(userId);
-  const mobileItems = currentRole === "client" ? getClientMobileNavItems(userId) : getMobileNavItems(userId);
+  
+  // Create translated navigation items
+  const getTranslatedDesktopItems = () => {
+    const items = currentRole === "client" ? getClientDesktopNavItems(userId) : getDesktopNavItems(userId);
+    return items.map(item => ({
+      ...item,
+      name: t(`nav.${item.name.toLowerCase().replace(/\s+/g, '')}`) || item.name
+    }));
+  };
+  
+  const getTranslatedMobileItems = () => {
+    const items = currentRole === "client" ? getClientMobileNavItems(userId) : getMobileNavItems(userId);
+    return items.map(item => ({
+      ...item,
+      name: t(`nav.${item.name.toLowerCase().replace(/\s+/g, '')}`) || item.name
+    }));
+  };
+  
+  const desktopItems = getTranslatedDesktopItems();
+  const mobileItems = getTranslatedMobileItems();
   
   const userName = user?.displayName || userData?.fullName || user?.email?.split("@")[0] || "U";
   const userInitial = userName.charAt(0).toUpperCase();

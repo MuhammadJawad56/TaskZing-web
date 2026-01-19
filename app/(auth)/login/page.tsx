@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { signIn, signInWithGoogle, signInWithApple, handleAppleRedirect, setAuthCookie } from "@/lib/firebase/auth";
 import { FirebaseError } from "firebase/app";
+import { useLanguage } from "@/lib/contexts/LanguageContext";
 
 export default function LoginPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/dashboard";
@@ -38,33 +40,31 @@ export default function LoginPage() {
   const getErrorMessage = (errorCode: string): string => {
     switch (errorCode) {
       case "auth/invalid-email":
-        return "Invalid email address.";
+        return t("auth.invalidEmail");
       case "auth/user-disabled":
-        return "This account has been disabled.";
+        return t("auth.userDisabled");
       case "auth/user-not-found":
-        return "No account found with this email.";
+        return t("auth.userNotFound");
       case "auth/wrong-password":
-        return "Incorrect password.";
+        return t("auth.wrongPassword");
       case "auth/invalid-credential":
-        return "Invalid email or password.";
+        return t("auth.invalidCredential");
       case "auth/too-many-requests":
-        return "Too many failed attempts. Please try again later.";
+        return t("auth.tooManyRequests");
       case "auth/popup-closed-by-user":
-        return "Sign-in popup was closed. Please try again.";
+        return t("auth.popupClosed");
       case "auth/cancelled-popup-request":
-        return "Sign-in was cancelled. Please try again.";
+        return t("auth.cancelled");
       case "auth/popup-blocked":
-        return "Popup was blocked by browser. Please allow popups and try again.";
+        return t("auth.popupBlocked");
       case "auth/unauthorized-domain":
-        return "This domain is not authorized. Please contact support.";
+        return t("auth.unauthorizedDomain");
       case "auth/operation-not-allowed":
-        return "Google sign-in is not enabled. Please contact support.";
+        return t("auth.operationNotAllowed");
       case "auth/account-exists-with-different-credential":
-        return "An account already exists with a different sign-in method.";
-      case "auth/invalid-credential":
-        return "Invalid credential. Please try again.";
+        return t("auth.accountExists");
       default:
-        return "An error occurred. Please try again.";
+        return t("auth.errorOccurred");
     }
   };
 
@@ -82,7 +82,7 @@ export default function LoginPage() {
       if (err instanceof FirebaseError) {
         setError(getErrorMessage(err.code));
       } else {
-        setError("An error occurred. Please try again.");
+        setError(t("auth.errorOccurred"));
       }
     } finally {
       setIsLoading(false);
@@ -142,19 +142,19 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-theme-primaryText dark:text-white">
-            Sign in to your account
+            {t("auth.signInToAccount")}
           </h2>
           <p className="mt-2 text-center text-sm text-theme-accent4 dark:text-gray-300">
-            Or{" "}
+            {t("common.or")}{" "}
             <Link href="/signup" className="font-medium text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300">
-              create a new account
+              {t("auth.createAccount")}
             </Link>
           </p>
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Login</CardTitle>
-            <CardDescription>Enter your credentials to access your account</CardDescription>
+            <CardTitle>{t("auth.login")}</CardTitle>
+            <CardDescription>{t("auth.enterCredentials")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -164,35 +164,35 @@ export default function LoginPage() {
                 </div>
               )}
               <Input
-                label="Email address"
+                label={t("auth.email")}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                aria-label="Email address"
+                aria-label={t("auth.email")}
               />
               <div>
                 <Input
-                  label="Password"
+                  label={t("auth.password")}
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
-                  aria-label="Password"
+                  aria-label={t("auth.password")}
                 />
                 <div className="mt-2 text-right">
                   <Link
                     href="/forgot-password"
                     className="text-sm font-medium text-primary-500 hover:text-primary-600"
                   >
-                    Forgot password?
+                    {t("auth.forgotPassword")}
                   </Link>
                 </div>
               </div>
               <Button type="submit" variant="primary" size="lg" className="w-full" isLoading={isLoading}>
-                Sign in
+                {t("auth.signIn")}
               </Button>
 
               <div className="relative my-4">
@@ -200,7 +200,7 @@ export default function LoginPage() {
                   <div className="w-full border-t border-gray-300 dark:border-darkBlue-203"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white dark:bg-darkBlue-203 text-gray-500 dark:text-gray-300">Or continue with</span>
+                  <span className="px-2 bg-white dark:bg-darkBlue-203 text-gray-500 dark:text-gray-300">{t("auth.orContinueWith")}</span>
                 </div>
               </div>
 
@@ -234,7 +234,7 @@ export default function LoginPage() {
                     </svg>
                   )}
                   <span className="font-medium">
-                    {isGoogleLoading ? "Signing in..." : "Continue with Google"}
+                    {isGoogleLoading ? t("auth.signingIn") : t("auth.continueWithGoogle")}
                   </span>
                 </button>
 
@@ -252,7 +252,7 @@ export default function LoginPage() {
                     </svg>
                   )}
                   <span className="font-medium">
-                    {isAppleLoading ? "Signing in..." : "Continue with Apple"}
+                    {isAppleLoading ? t("auth.signingIn") : t("auth.continueWithApple")}
                   </span>
                 </button>
               </div>

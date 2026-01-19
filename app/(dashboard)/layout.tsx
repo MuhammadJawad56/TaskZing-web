@@ -1,5 +1,6 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ThemeProvider } from "@/lib/contexts/ThemeContext";
+import { LanguageProvider } from "@/lib/contexts/LanguageContext";
 
 export default function DashboardRootLayout({
   children,
@@ -8,7 +9,9 @@ export default function DashboardRootLayout({
 }) {
   return (
     <ThemeProvider>
-      <DashboardLayout>{children}</DashboardLayout>
+      <LanguageProvider>
+        <DashboardLayout>{children}</DashboardLayout>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

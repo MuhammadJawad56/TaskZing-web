@@ -9,8 +9,10 @@ import { Select } from "@/components/ui/Select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { signUp, signInWithGoogle, signInWithApple, handleAppleRedirect, setAuthCookie } from "@/lib/firebase/auth";
 import { FirebaseError } from "firebase/app";
+import { useLanguage } from "@/lib/contexts/LanguageContext";
 
 export default function SignupPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const roleParam = searchParams.get("role");
@@ -42,23 +44,23 @@ export default function SignupPage() {
   const getErrorMessage = (errorCode: string): string => {
     switch (errorCode) {
       case "auth/email-already-in-use":
-        return "An account with this email already exists.";
+        return t("auth.emailAlreadyInUse");
       case "auth/invalid-email":
-        return "Invalid email address.";
+        return t("auth.invalidEmail");
       case "auth/operation-not-allowed":
-        return "Email/password accounts are not enabled.";
+        return t("auth.operationNotAllowed");
       case "auth/weak-password":
-        return "Password is too weak. Please use a stronger password.";
+        return t("auth.weakPassword");
       case "auth/popup-closed-by-user":
-        return "Sign-in popup was closed. Please try again.";
+        return t("auth.popupClosed");
       case "auth/cancelled-popup-request":
-        return "Sign-in was cancelled. Please try again.";
+        return t("auth.cancelled");
       case "auth/account-exists-with-different-credential":
-        return "An account already exists with a different sign-in method.";
+        return t("auth.accountExists");
       case "auth/invalid-credential":
-        return "Invalid credential. Please try again.";
+        return t("auth.invalidCredential");
       default:
-        return "An error occurred. Please try again.";
+        return t("auth.errorOccurred");
     }
   };
 
@@ -75,7 +77,7 @@ export default function SignupPage() {
       if (err instanceof FirebaseError) {
         setError(getErrorMessage(err.code));
       } else {
-        setError("An error occurred. Please try again.");
+        setError(t("auth.errorOccurred"));
       }
     } finally {
       setIsGoogleLoading(false);
@@ -100,7 +102,7 @@ export default function SignupPage() {
         // This is expected for redirect flow, don't show error
         return;
       } else {
-        setError(`An error occurred: ${err instanceof Error ? err.message : "Unknown error"}`);
+        setError(t("auth.errorOccurred"));
       }
     } finally {
       setIsAppleLoading(false);
@@ -112,12 +114,12 @@ export default function SignupPage() {
     setError("");
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError(t("auth.passwordsDoNotMatch"));
       return;
     }
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+      setError(t("auth.passwordTooShort"));
       return;
     }
 
@@ -132,7 +134,7 @@ export default function SignupPage() {
       if (err instanceof FirebaseError) {
         setError(getErrorMessage(err.code));
       } else {
-        setError("An error occurred. Please try again.");
+        setError(t("auth.errorOccurred"));
       }
     } finally {
       setIsLoading(false);
@@ -144,19 +146,19 @@ export default function SignupPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-theme-primaryText dark:text-white">
-            Create your account
+            {t("auth.createYourAccount")}
           </h2>
           <p className="mt-2 text-center text-sm text-theme-accent4 dark:text-gray-300">
-            Already have an account?{" "}
+            {t("auth.alreadyHaveAccount")}{" "}
             <Link href="/login" className="font-medium text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300">
-              Sign in
+              {t("auth.signIn")}
             </Link>
           </p>
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Sign Up</CardTitle>
-            <CardDescription>Join TaskZing and start connecting with professionals</CardDescription>
+            <CardTitle>{t("auth.signUp")}</CardTitle>
+            <CardDescription>{t("auth.joinTaskzing")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -166,54 +168,54 @@ export default function SignupPage() {
                 </div>
               )}
               <Input
-                label="Full Name"
+                label={t("auth.fullName")}
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
                 autoComplete="name"
-                aria-label="Full name"
+                aria-label={t("auth.fullName")}
               />
               <Input
-                label="Email address"
+                label={t("auth.email")}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                aria-label="Email address"
+                aria-label={t("auth.email")}
               />
               <Select
-                label="I want to"
+                label={t("auth.iWantTo")}
                 options={[
-                  { value: "client", label: "Hire professionals" },
-                  { value: "provider", label: "Offer my services" },
+                  { value: "client", label: t("auth.hireProfessionals") },
+                  { value: "provider", label: t("auth.offerServices") },
                 ]}
                 value={role}
                 onChange={(e) => setRole(e.target.value as "client" | "provider")}
                 aria-label="Account type"
               />
               <Input
-                label="Password"
+                label={t("auth.password")}
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="new-password"
-                helperText="Must be at least 6 characters"
-                aria-label="Password"
+                helperText={t("auth.mustBe6Chars")}
+                aria-label={t("auth.password")}
               />
               <Input
-                label="Confirm Password"
+                label={t("auth.confirmPassword")}
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 autoComplete="new-password"
-                aria-label="Confirm password"
+                aria-label={t("auth.confirmPassword")}
               />
               <Button type="submit" variant="primary" size="lg" className="w-full" isLoading={isLoading}>
-                Create Account
+                {t("auth.createAccountBtn")}
               </Button>
 
               <div className="relative my-4">
@@ -221,7 +223,7 @@ export default function SignupPage() {
                   <div className="w-full border-t border-gray-300 dark:border-darkBlue-203"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white dark:bg-darkBlue-203 text-gray-500 dark:text-gray-300">Or continue with</span>
+                  <span className="px-2 bg-white dark:bg-darkBlue-203 text-gray-500 dark:text-gray-300">{t("auth.orContinueWith")}</span>
                 </div>
               </div>
 
@@ -255,7 +257,7 @@ export default function SignupPage() {
                     </svg>
                   )}
                   <span className="font-medium">
-                    {isGoogleLoading ? "Signing up..." : "Continue with Google"}
+                    {isGoogleLoading ? t("auth.signingUp") : t("auth.continueWithGoogle")}
                   </span>
                 </button>
 
@@ -273,7 +275,7 @@ export default function SignupPage() {
                     </svg>
                   )}
                   <span className="font-medium">
-                    {isAppleLoading ? "Signing up..." : "Continue with Apple"}
+                    {isAppleLoading ? t("auth.signingUp") : t("auth.continueWithApple")}
                   </span>
                 </button>
               </div>

@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/firebase/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useTheme } from "@/lib/contexts/ThemeContext";
+import { useLanguage } from "@/lib/contexts/LanguageContext";
 
 export const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -16,6 +17,7 @@ export const Header: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
   const { theme } = useTheme();
+  const { t } = useLanguage();
 
   // Don't show header if user is authenticated (dashboard header will show instead)
   // Also hide on dashboard routes
@@ -55,25 +57,25 @@ export const Header: React.FC = () => {
               href="/categories"
               className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
             >
-              Categories
+              {t("header.categories")}
             </Link>
             <Link
               href="/how-it-works"
               className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
             >
-              How It Works
+              {t("header.howItWorks")}
             </Link>
             <Link
               href="/pricing"
               className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
             >
-              Pricing
+              {t("header.pricing")}
             </Link>
             <Link
               href="/about"
               className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
             >
-              About
+              {t("header.about")}
             </Link>
           </nav>
 
@@ -83,7 +85,7 @@ export const Header: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-theme-accent4 dark:text-gray-400" />
               <input
                 type="text"
-                placeholder="Search tasks..."
+                placeholder={t("header.searchTasks")}
                 className="w-full pl-10 pr-4 py-2 border border-theme-accent2 dark:border-darkBlue-203 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-theme-primaryBackground dark:bg-darkBlue-203 text-theme-primaryText dark:text-white placeholder:text-theme-accent4 dark:placeholder:text-gray-400"
               />
             </div>
@@ -94,12 +96,12 @@ export const Header: React.FC = () => {
             <LanguageSwitcher />
             <Link href="/login">
               <Button variant="ghost" size="sm">
-                Log In
+                {t("header.logIn")}
               </Button>
             </Link>
             <Link href="/signup">
               <Button variant="primary" size="sm">
-                Sign Up
+                {t("header.signUp")}
               </Button>
             </Link>
           </div>
@@ -128,28 +130,28 @@ export const Header: React.FC = () => {
                 className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Categories
+                {t("header.categories")}
               </Link>
               <Link
                 href="/how-it-works"
                 className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400"
                 onClick={() => setIsMenuOpen(false)}
               >
-                How It Works
+                {t("header.howItWorks")}
               </Link>
               <Link
                 href="/pricing"
                 className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Pricing
+                {t("header.pricing")}
               </Link>
               <Link
                 href="/about"
                 className="text-sm font-medium text-theme-primaryText dark:text-white hover:text-primary-500 dark:hover:text-primary-400"
                 onClick={() => setIsMenuOpen(false)}
               >
-                About
+                {t("header.about")}
               </Link>
               <div className="pt-4 border-t border-theme-accent2 dark:border-darkBlue-203 space-y-2">
                 <div className="pb-2">
@@ -157,12 +159,12 @@ export const Header: React.FC = () => {
                 </div>
                 <Link href="/login" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="ghost" size="sm" className="w-full">
-                    Log In
+                    {t("header.logIn")}
                   </Button>
                 </Link>
                 <Link href="/signup" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="primary" size="sm" className="w-full">
-                    Sign Up
+                    {t("header.signUp")}
                   </Button>
                 </Link>
               </div>
