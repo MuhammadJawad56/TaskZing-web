@@ -3,6 +3,7 @@ import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile,
   onAuthStateChanged,
   GoogleAuthProvider,
@@ -53,6 +54,9 @@ export async function signUp(
     displayName: fullName,
   });
 
+  // Send email verification
+  await sendEmailVerification(userCredential.user);
+
   // Store additional user data in Firestore
   await setDoc(doc(db, "users", userCredential.user.uid), {
     uid: userCredential.user.uid,
@@ -60,6 +64,7 @@ export async function signUp(
     fullName: fullName,
     role: role,
     currentRole: role,
+    emailVerified: false,
     createdAt: new Date(),
   });
 
@@ -205,6 +210,18 @@ export async function signOut(): Promise<void> {
 // Reset password
 export async function resetPassword(email: string): Promise<void> {
   return sendPasswordResetEmail(auth, email);
+}
+
+// Resend email verification
+export async function resendEmailVerification(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("No user is currently signed in");
+  }
+  if (user.emailVerified) {
+    throw new Error("Email is already verified");
+  }
+  return sendEmailVerification(user);
 }
 
 // Get user data from Firestore

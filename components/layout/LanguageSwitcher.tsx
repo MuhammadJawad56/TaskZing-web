@@ -1,38 +1,26 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Languages } from "lucide-react";
+import { useLanguage } from "@/lib/contexts/LanguageContext";
 
 export const LanguageSwitcher: React.FC = () => {
-  const [language, setLanguage] = useState<"en" | "fr">("en");
-
-  useEffect(() => {
-    // Load saved language preference
-    const savedLanguage = localStorage.getItem("taskzing_language") as "en" | "fr" | null;
-    if (savedLanguage === "en" || savedLanguage === "fr") {
-      setLanguage(savedLanguage);
-    }
-  }, []);
+  const { language, setLanguage } = useLanguage();
 
   const toggleLanguage = () => {
-    const newLanguage = language === "en" ? "fr" : "en";
+    const newLanguage = language === "english" ? "french" : "english";
     setLanguage(newLanguage);
-    localStorage.setItem("taskzing_language", newLanguage);
-    
-    // You can add more logic here to actually change the page language
-    // For now, this just toggles the display
-    // In a full implementation, you'd use next-intl or similar i18n library
   };
 
   return (
     <button
       onClick={toggleLanguage}
-      className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-theme-accent2 transition-colors text-theme-primaryText"
-      aria-label={`Switch language to ${language === "en" ? "French" : "English"}`}
+      className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-theme-accent2 dark:hover:bg-darkBlue-203 transition-colors text-theme-primaryText dark:text-white"
+      aria-label={`Switch language to ${language === "english" ? "French" : "English"}`}
     >
       <Languages className="h-4 w-4" />
       <span className="text-sm font-semibold">
-        {language === "en" ? "ENG" : "FR"}
+        {language === "english" ? "ENG" : "FR"}
       </span>
     </button>
   );
