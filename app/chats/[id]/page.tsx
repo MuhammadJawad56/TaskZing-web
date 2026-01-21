@@ -14,6 +14,7 @@ import {
   subscribeToMessages,
   deleteMessageForMe,
   deleteMessageForEveryone,
+  markMessagesAsRead,
 } from "@/lib/firebase/messages";
 import { Send, ArrowLeft, AlertCircle, MessageSquare, MoreVertical, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -55,6 +56,15 @@ export default function ChatDetailsPage() {
 
       if (room) {
         setChatRoom(room);
+        
+        // Mark messages as read when opening conversation
+        if (room.unreadCount && room.unreadCount > 0) {
+          try {
+            await markMessagesAsRead(chatRoomId, user.uid);
+          } catch (err) {
+            console.error("Error marking messages as read:", err);
+          }
+        }
       } else {
         setError("Chat room not found");
       }
@@ -94,9 +104,18 @@ export default function ChatDetailsPage() {
 
     console.log("Setting up messages subscription for room:", chatRoomId);
 
-    messagesUnsubRef.current = subscribeToMessages(chatRoomId, (msgs) => {
+    messagesUnsubRef.current = subscribeToMessages(chatRoomId, async (msgs) => {
       console.log("Received messages update:", msgs.length, "messages");
       setMessages(msgs);
+      
+      // Mark messages as read when viewing them in real-time
+      if (chatRoom && chatRoom.unreadCount && chatRoom.unreadCount > 0) {
+        try {
+          await markMessagesAsRead(chatRoomId, user.uid);
+        } catch (err) {
+          console.error("Error marking messages as read:", err);
+        }
+      }
     });
 
     return () => {
@@ -105,7 +124,7 @@ export default function ChatDetailsPage() {
         messagesUnsubRef.current = null;
       }
     };
-  }, [chatRoomId, user?.uid]);
+  }, [chatRoomId, user?.uid, chatRoom]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

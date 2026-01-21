@@ -653,6 +653,10 @@ export async function sendMessage(
 
         messageRef = await addDoc(messagesRef, newMessage);
 
+        // Get participant IDs to increment unread count for recipients
+        const roomData = roomDoc.data();
+        const participantIds = extractParticipantIds(roomData);
+        
         // Update chat room's last message
         await updateDoc(roomRef, {
           lastMessage: {
@@ -664,6 +668,14 @@ export async function sendMessage(
           lastMessageAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
+
+        // Increment unread count for all participants except the sender
+        // Do this in parallel for better performance
+        const incrementPromises = participantIds
+          .filter((id) => id !== senderId)
+          .map((participantId) => incrementUnreadCount(chatRoomId, participantId, senderId));
+        
+        await Promise.all(incrementPromises);
 
         console.log(`Message sent to ${collectionName}/${chatRoomId}/messages`);
         break;
@@ -1035,11 +1047,18 @@ export async function getOrCreateChatRoom(
     ...COLLECTION_NAMES.chatRooms.filter((c) => c !== "chat_rooms"),
   ];
 
+  // Initialize unreadCount as object with 0 for each participant
+  const unreadCount: Record<string, number> = {};
+  sortedIds.forEach((id) => {
+    unreadCount[id] = 0;
+  });
+
   const newRoomBase = {
     // Write both fields so web/app can both find it
     participantIds: sortedIds,
     participants: sortedIds,
     jobId: jobId || null,
+    unreadCount: unreadCount,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     lastMessageAt: serverTimestamp(),
@@ -1205,5 +1224,111 @@ export async function deleteMessageForEveryone(
   } catch (error: any) {
     console.error("Error deleting message for everyone:", error);
     throw error;
+  }
+}
+
+// Mark messages as read (clear unread count for a user in a chat room)
+export async function markMessagesAsRead(
+  chatRoomId: string,
+  userId: string
+): Promise<void> {
+  const roomCollection = await detectRoomCollection(chatRoomId);
+  const collectionsToTry = [
+    roomCollection,
+    ...COLLECTION_NAMES.chatRooms.filter((c) => c !== roomCollection),
+  ];
+
+  for (const collectionName of collectionsToTry) {
+    try {
+      const roomRef = doc(db, collectionName, chatRoomId);
+      const roomDoc = await getDoc(roomRef);
+
+      if (roomDoc.exists()) {
+        const data = roomDoc.data();
+        
+        // Handle unreadCount as object (per-user counts) or number
+        if (typeof data.unreadCount === "object" && data.unreadCount !== null) {
+          // Per-user unread count object
+          const updatedUnreadCount = {
+            ...data.unreadCount,
+            [userId]: 0,
+          };
+          await updateDoc(roomRef, {
+            unreadCount: updatedUnreadCount,
+            updatedAt: serverTimestamp(),
+          });
+        } else {
+          // Simple number - set to 0 for this user
+          // If it's a number, we'll set it to 0 (assuming it's for the current user)
+          await updateDoc(roomRef, {
+            unreadCount: 0,
+            updatedAt: serverTimestamp(),
+          });
+        }
+        
+        console.log(`Marked messages as read for user ${userId} in room ${chatRoomId}`);
+        return;
+      }
+    } catch (error: any) {
+      console.warn(`Could not mark as read in ${collectionName}:`, error.message);
+      continue;
+    }
+  }
+  
+  console.warn(`Could not find chat room ${chatRoomId} to mark as read`);
+}
+
+// Increment unread count for a user in a chat room
+async function incrementUnreadCount(
+  chatRoomId: string,
+  recipientId: string,
+  senderId: string
+): Promise<void> {
+  // Don't increment if sender is viewing their own message
+  if (recipientId === senderId) {
+    return;
+  }
+
+  const roomCollection = await detectRoomCollection(chatRoomId);
+  const collectionsToTry = [
+    roomCollection,
+    ...COLLECTION_NAMES.chatRooms.filter((c) => c !== roomCollection),
+  ];
+
+  for (const collectionName of collectionsToTry) {
+    try {
+      const roomRef = doc(db, collectionName, chatRoomId);
+      const roomDoc = await getDoc(roomRef);
+
+      if (roomDoc.exists()) {
+        const data = roomDoc.data();
+        
+        // Handle unreadCount as object (per-user counts) or number
+        if (typeof data.unreadCount === "object" && data.unreadCount !== null) {
+          // Per-user unread count object
+          const currentCount = data.unreadCount[recipientId] || 0;
+          const updatedUnreadCount = {
+            ...data.unreadCount,
+            [recipientId]: currentCount + 1,
+          };
+          await updateDoc(roomRef, {
+            unreadCount: updatedUnreadCount,
+            updatedAt: serverTimestamp(),
+          });
+        } else {
+          // Simple number - increment it
+          const currentCount = typeof data.unreadCount === "number" ? data.unreadCount : 0;
+          await updateDoc(roomRef, {
+            unreadCount: currentCount + 1,
+            updatedAt: serverTimestamp(),
+          });
+        }
+        
+        return;
+      }
+    } catch (error: any) {
+      console.warn(`Could not increment unread count in ${collectionName}:`, error.message);
+      continue;
+    }
   }
 }
