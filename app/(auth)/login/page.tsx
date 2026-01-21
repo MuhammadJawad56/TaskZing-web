@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { signIn, signInWithGoogle, signInWithApple, handleAppleRedirect, setAuthCookie } from "@/lib/firebase/auth";
+import { isProfileComplete } from "@/lib/firebase/users";
 import { FirebaseError } from "firebase/app";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
 
@@ -25,10 +26,17 @@ export default function LoginPage() {
 
   // Handle Apple redirect result on page load
   useEffect(() => {
-    handleAppleRedirect().then((result) => {
+    handleAppleRedirect().then(async (result) => {
       if (result) {
         setAuthCookie(result.user);
-        router.push(redirect);
+        
+        // Check if profile is complete
+        const profileComplete = await isProfileComplete(result.user.uid);
+        if (!profileComplete) {
+          router.push("/initial-profile");
+        } else {
+          router.push(redirect);
+        }
       }
     }).catch((err) => {
       if (err instanceof FirebaseError) {
@@ -77,7 +85,14 @@ export default function LoginPage() {
       const userCredential = await signIn(email, password);
       // Set cookie for middleware
       setAuthCookie(userCredential.user);
-      router.push(redirect);
+      
+      // Check if profile is complete
+      const profileComplete = await isProfileComplete(userCredential.user.uid);
+      if (!profileComplete) {
+        router.push("/initial-profile");
+      } else {
+        router.push(redirect);
+      }
     } catch (err) {
       if (err instanceof FirebaseError) {
         setError(getErrorMessage(err.code));
@@ -97,7 +112,14 @@ export default function LoginPage() {
       const userCredential = await signInWithGoogle();
       // Set cookie for middleware
       setAuthCookie(userCredential.user);
-      router.push(redirect);
+      
+      // Check if profile is complete
+      const profileComplete = await isProfileComplete(userCredential.user.uid);
+      if (!profileComplete) {
+        router.push("/initial-profile");
+      } else {
+        router.push(redirect);
+      }
     } catch (err) {
       console.error("Google Sign-in Error:", err);
       if (err instanceof FirebaseError) {
@@ -120,7 +142,14 @@ export default function LoginPage() {
       const userCredential = await signInWithApple();
       // Set cookie for middleware
       setAuthCookie(userCredential.user);
-      router.push(redirect);
+      
+      // Check if profile is complete
+      const profileComplete = await isProfileComplete(userCredential.user.uid);
+      if (!profileComplete) {
+        router.push("/initial-profile");
+      } else {
+        router.push(redirect);
+      }
     } catch (err) {
       console.error("Apple Sign-in Error:", err);
       if (err instanceof FirebaseError) {

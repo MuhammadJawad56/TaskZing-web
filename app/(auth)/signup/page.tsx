@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { signUp, signInWithGoogle, signInWithApple, handleAppleRedirect } from "@/lib/firebase/auth";
+import { isProfileComplete } from "@/lib/firebase/users";
 import { FirebaseError } from "firebase/app";
 import { Eye, EyeOff } from "lucide-react";
 import { useTheme } from "@/lib/contexts/ThemeContext";
@@ -29,9 +30,15 @@ export default function SignupPage() {
 
   // Handle Apple redirect result on page load
   useEffect(() => {
-    handleAppleRedirect().then((result) => {
+    handleAppleRedirect().then(async (result) => {
       if (result) {
-        router.push("/dashboard");
+        // Check if profile is complete
+        const profileComplete = await isProfileComplete(result.user.uid);
+        if (!profileComplete) {
+          router.push("/initial-profile");
+        } else {
+          router.push("/dashboard");
+        }
       }
     }).catch((err) => {
       if (err instanceof FirebaseError) {
@@ -68,8 +75,15 @@ export default function SignupPage() {
     setIsGoogleLoading(true);
 
     try {
-      await signInWithGoogle();
-      router.push("/dashboard");
+      const userCredential = await signInWithGoogle();
+      
+      // Check if profile is complete
+      const profileComplete = await isProfileComplete(userCredential.user.uid);
+      if (!profileComplete) {
+        router.push("/initial-profile");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err) {
       if (err instanceof FirebaseError) {
         setError(getErrorMessage(err.code));
@@ -86,8 +100,15 @@ export default function SignupPage() {
     setIsAppleLoading(true);
 
     try {
-      await signInWithApple();
-      router.push("/dashboard");
+      const userCredential = await signInWithApple();
+      
+      // Check if profile is complete
+      const profileComplete = await isProfileComplete(userCredential.user.uid);
+      if (!profileComplete) {
+        router.push("/initial-profile");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err) {
       console.error("Apple Sign-in Error:", err);
       if (err instanceof FirebaseError) {

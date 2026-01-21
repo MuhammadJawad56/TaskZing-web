@@ -18,6 +18,30 @@ export default function EmailConfirmationPage() {
   const [resendSuccess, setResendSuccess] = useState(false);
   const [error, setError] = useState("");
 
+  // Check email verification status periodically
+  useEffect(() => {
+    const checkVerification = async () => {
+      const user = getCurrentUser();
+      if (user && user.emailVerified) {
+        // Check if profile is complete
+        const profileComplete = await isProfileComplete(user.uid);
+        if (!profileComplete) {
+          router.push("/initial-profile");
+        } else {
+          router.push("/dashboard");
+        }
+      }
+    };
+
+    // Check immediately
+    checkVerification();
+
+    // Check every 2 seconds
+    const interval = setInterval(checkVerification, 2000);
+
+    return () => clearInterval(interval);
+  }, [router]);
+
   const handleResend = async () => {
     setIsResending(true);
     setError("");

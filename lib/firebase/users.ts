@@ -81,3 +81,29 @@ export async function getUserById(uid: string): Promise<User | null> {
     return null;
   }
 }
+
+// Check if user profile is complete
+export async function isProfileComplete(uid: string): Promise<boolean> {
+  try {
+    const userDoc = await getDoc(doc(db, "users", uid));
+    if (!userDoc.exists()) {
+      return false;
+    }
+    
+    const data = userDoc.data();
+    // Check if profile is marked as complete
+    if (data.profileCompleted === true) {
+      return true;
+    }
+    
+    // Check if all required fields are filled
+    const hasUsername = data.username && data.username.trim().length > 0;
+    const hasLocation = data.location && data.location.trim().length > 0;
+    const hasBio = (data.bio || data.about) && (data.bio || data.about).trim().length > 0;
+    
+    return hasUsername && hasLocation && hasBio;
+  } catch (error) {
+    console.error("Error checking profile completion:", error);
+    return false;
+  }
+}

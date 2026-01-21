@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -30,6 +30,8 @@ import {
   Send,
   Users,
   Star,
+  CreditCard,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { DashboardHeader } from "./DashboardHeader";
@@ -37,7 +39,156 @@ import { useTheme } from "@/lib/contexts/ThemeContext";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/firebase/AuthContext";
+import { isProfileComplete } from "@/lib/firebase/users";
 import { switchUserRole } from "@/lib/firebase/auth";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
+import { collection, query, where, getDocs, addDoc, Timestamp } from "firebase/firestore";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { Button } from "@/components/ui/Button";
+
+// Initialize Stripe - same as payment-method page
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_your_publishable_key_here"
+);
+
+const SKILLS = [
+  "Cleaning", "Plumbing", "Electrical", "Carpentry", "Painting", "Landscaping",
+  "Moving", "Delivery", "IT Support", "Web Development", "Graphic Design", "Photography",
+  "Tutoring", "Consulting", "Legal Services", "Financial Services", "Others",
+];
+
+const cardElementOptions = {
+  style: {
+    base: {
+      fontSize: "16px",
+      color: "#1f2937",
+      fontFamily: '"Inter", sans-serif',
+      "::placeholder": { color: "#9ca3af" },
+    },
+    invalid: { color: "#ef4444" },
+  },
+  hidePostalCode: false,
+};
+
+// Payment Card Form Component for Mobile
+function MobilePaymentCardForm({ onSuccess, onCancel, userEmail, userId }: { onSuccess: () => void; onCancel: () => void; userEmail: string | null; userId: string }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
+  const [cardComplete, setCardComplete] = useState(false);
+  const [cardholderName, setCardholderName] = useState("");
+
+  const handleCardChange = (event: any) => {
+    setCardComplete(event.complete);
+    if (event.error) {
+      setCardError(event.error.message);
+    } else {
+      setCardError(null);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements || !userId) return;
+
+    if (!cardholderName.trim()) {
+      setCardError("Please enter the cardholder name");
+      return;
+    }
+
+    setIsProcessing(true);
+    setCardError(null);
+
+    const cardElement = elements.getElement(CardElement);
+    if (!cardElement) {
+      setCardError("Card Element not found.");
+      setIsProcessing(false);
+      return;
+    }
+
+    try {
+      const { paymentMethod, error } = await stripe.createPaymentMethod({
+        type: "card",
+        card: cardElement,
+        billing_details: {
+          name: cardholderName.trim(),
+          email: userEmail || undefined,
+        },
+      });
+
+      if (error) {
+        setCardError(error.message || "An unknown error occurred.");
+        setIsProcessing(false);
+        return;
+      }
+
+      if (!paymentMethod) {
+        setCardError("Failed to create payment method");
+        setIsProcessing(false);
+        return;
+      }
+
+      const paymentMethodData = {
+        userId: userId,
+        paymentMethodId: paymentMethod.id,
+        last4: paymentMethod.card?.last4,
+        brand: paymentMethod.card?.brand,
+        exp_month: paymentMethod.card?.exp_month,
+        exp_year: paymentMethod.card?.exp_year,
+        cardholderName: cardholderName.trim(),
+        createdAt: Timestamp.now(),
+      };
+
+      await addDoc(collection(db, "paymentMethods"), paymentMethodData);
+      onSuccess();
+    } catch (err: any) {
+      setCardError(err.message || "Failed to add payment method.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Add Payment Method</h3>
+        <button type="button" onClick={onCancel} className="p-1 hover:bg-gray-100 rounded-lg">
+          <X className="h-5 w-5 text-gray-500" />
+        </button>
+      </div>
+
+      {cardError && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{cardError}</div>
+      )}
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Cardholder Name</label>
+        <input
+          type="text"
+          value={cardholderName}
+          onChange={(e) => setCardholderName(e.target.value)}
+          placeholder="John Doe"
+          required
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-900"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Card Details</label>
+        <div className="p-3 border border-gray-300 rounded-lg bg-gray-50">
+          <CardElement options={cardElementOptions} onChange={handleCardChange} />
+        </div>
+      </div>
+
+      <Button type="submit" isLoading={isProcessing} disabled={!stripe || !elements || !cardComplete || isProcessing} className="w-full">
+        {isProcessing ? "Adding Card..." : "Add Card"}
+      </Button>
+    </form>
+  );
+}
 
 interface NavItem {
   name: string;
@@ -101,13 +252,132 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
   const [isSwitching, setIsSwitching] = useState(false);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
   const [switchModalTarget, setSwitchModalTarget] = useState<"client" | "provider">("client");
+  const [hasProviderProfile, setHasProviderProfile] = useState(false);
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { t } = useLanguage();
   const router = useRouter();
-  const { user, userData } = useAuth();
+  const { user, userData, loading: authLoading } = useAuth();
   const currentRole = userData?.currentRole || userData?.role || "provider";
   const userId = user?.uid || userData?.uid || "";
+  const isClientOnly = userData?.role === "client" && currentRole === "client";
+
+  // Become a Provider modal state
+  const [showBecomeProviderModal, setShowBecomeProviderModal] = useState(false);
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [serviceDescription, setServiceDescription] = useState("");
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [hasPaymentMethod, setHasPaymentMethod] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [providerError, setProviderError] = useState("");
+
+  // Check if user has provider profile
+  useEffect(() => {
+    if (userData) {
+      const hasProvider = 
+        userData.role === "client+provider" || 
+        userData.providerProfileCompleted === true ||
+        (userData.skills && userData.skills.length > 0);
+      setHasProviderProfile(hasProvider);
+    }
+  }, [userData]);
+
+  // Check if user has payment methods
+  useEffect(() => {
+    const checkPaymentMethods = async () => {
+      if (!user) return;
+      try {
+        const paymentMethodsQuery = query(
+          collection(db, "paymentMethods"),
+          where("userId", "==", user.uid)
+        );
+        const snapshot = await getDocs(paymentMethodsQuery);
+        setHasPaymentMethod(!snapshot.empty);
+      } catch (error) {
+        console.error("Error checking payment methods:", error);
+      }
+    };
+    if (user) checkPaymentMethods();
+  }, [user]);
+
+  const toggleSkill = (skill: string) => {
+    setSelectedSkills((prev) =>
+      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]
+    );
+  };
+
+  const handleBecomeProviderSubmit = async () => {
+    if (!user) {
+      setProviderError("Please sign in to continue");
+      return;
+    }
+
+    if (selectedSkills.length === 0) {
+      setProviderError("Please select at least one skill");
+      return;
+    }
+
+    if (!serviceDescription.trim()) {
+      setProviderError("Please provide a service description");
+      return;
+    }
+
+    if (!hasPaymentMethod) {
+      setProviderError("Please add a payment method to continue");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setProviderError("");
+
+    try {
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, {
+        role: "client+provider",
+        currentRole: "provider",
+        skills: selectedSkills,
+        bio: serviceDescription.trim(),
+        about: serviceDescription.trim(),
+        providerProfileCompleted: true,
+        updatedAt: new Date(),
+      });
+
+      setShowBecomeProviderModal(false);
+      window.location.href = "/dashboard";
+    } catch (err: any) {
+      console.error("Error updating provider profile:", err);
+      setProviderError(err.message || "Failed to update profile. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const closeBecomeProviderModal = () => {
+    setShowBecomeProviderModal(false);
+    setSelectedSkills([]);
+    setServiceDescription("");
+    setProviderError("");
+    setShowPaymentForm(false);
+  };
+
+
+  // Check profile completion and redirect if needed
+  useEffect(() => {
+    if (authLoading || !user || pathname === "/initial-profile") return;
+    
+    const checkProfile = async () => {
+      try {
+        const profileComplete = await isProfileComplete(user.uid);
+        if (!profileComplete) {
+          router.push("/initial-profile");
+        }
+      } catch (error) {
+        console.error("Error checking profile completion:", error);
+      }
+    };
+    
+    checkProfile();
+  }, [user, authLoading, pathname, router]);
   
   // Create translated navigation items
   const getTranslatedDesktopItems = () => {
@@ -146,6 +416,12 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
   const handleSwitchToProvider = async () => {
     if (!user) {
       alert("Please log in to switch roles.");
+      return;
+    }
+    
+    // If client-only and doesn't have provider profile, show Become a Provider modal
+    if (isClientOnly && !hasProviderProfile) {
+      setShowBecomeProviderModal(true);
       return;
     }
     
@@ -373,7 +649,14 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
                   className="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg text-sm font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ArrowLeftRight className="h-5 w-5" />
-                  <span>{isSwitching ? "Switching..." : "Switch to Provider"}</span>
+                  <span>
+                    {isSwitching 
+                      ? "Switching..." 
+                      : isClientOnly && !hasProviderProfile
+                        ? "Become a Provider"
+                        : "Switch to Provider"
+                    }
+                  </span>
                 </button>
               ) : (
                 <button
@@ -654,7 +937,12 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
                       <ArrowLeftRight className="h-5 w-5 text-white" />
                     </div>
                     <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">
-                      {isSwitching ? "Switching..." : "Switch to Provider"}
+                      {isSwitching 
+                        ? "Switching..." 
+                        : isClientOnly && !hasProviderProfile
+                          ? "Become a Provider"
+                          : "Switch to Provider"
+                      }
                     </span>
                   </button>
                 </>
@@ -794,6 +1082,161 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
                 {isSwitching ? "Switching..." : "Switch Role"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Become a Provider Modal */}
+      {showBecomeProviderModal && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeBecomeProviderModal();
+          }}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-2xl z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                    <Briefcase className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold text-gray-900">Become a Provider</h1>
+                    <p className="text-sm text-gray-500">Complete your provider profile to start earning</p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeBecomeProviderModal}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="p-6 space-y-6">
+              {/* Error Message */}
+              {providerError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                  {providerError}
+                </div>
+              )}
+
+              {/* Role Confirmation */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-gray-600 mb-2">You are becoming a:</p>
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-5 w-5 text-red-600" />
+                  <span className="text-red-600 font-semibold">Provider</span>
+                  <div className="ml-auto w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="h-4 w-4 text-white" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Select Your Skills */}
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900 mb-3">Select Your Skills</h2>
+                <div className="grid grid-cols-3 gap-2">
+                  {SKILLS.map((skill) => (
+                    <button
+                      key={skill}
+                      type="button"
+                      onClick={() => toggleSkill(skill)}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                        selectedSkills.includes(skill)
+                          ? "bg-red-600 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      {skill}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Service Description */}
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900 mb-2">Service Description</h2>
+                <textarea
+                  value={serviceDescription}
+                  onChange={(e) => setServiceDescription(e.target.value)}
+                  placeholder="Describe your services and expertise..."
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-900 resize-none text-sm"
+                />
+              </div>
+
+              {/* Payment Details */}
+              <div>
+                {!hasPaymentMethod ? (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPaymentForm(true)}
+                      className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <CreditCard className="h-5 w-5" />
+                      <span>Add Payment Details</span>
+                    </button>
+                    <p className="mt-2 text-xs text-red-600">
+                      Add a payment method to verify your identity and enable payments.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+                    <CreditCard className="h-5 w-5 text-green-600" />
+                    <span className="text-sm text-green-700">Payment method added successfully</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex gap-3 rounded-b-2xl">
+              <Button variant="secondary" onClick={closeBecomeProviderModal} className="flex-1">
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleBecomeProviderSubmit}
+                disabled={isSubmitting || !hasPaymentMethod}
+                isLoading={isSubmitting}
+                className="flex-1"
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Form Modal (nested inside Become a Provider) */}
+      {showPaymentForm && (
+        <div 
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowPaymentForm(false);
+          }}
+        >
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <Elements stripe={stripePromise}>
+              <MobilePaymentCardForm
+                onSuccess={() => {
+                  setShowPaymentForm(false);
+                  setHasPaymentMethod(true);
+                }}
+                onCancel={() => setShowPaymentForm(false)}
+                userEmail={user?.email || null}
+                userId={user?.uid || ""}
+              />
+            </Elements>
           </div>
         </div>
       )}
