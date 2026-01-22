@@ -261,7 +261,8 @@ export default function PaymentMethodPage() {
     }
   };
 
-  const getCardIcon = (brand: string) => {
+  const getCardIcon = (brand: string | undefined | null) => {
+    if (!brand) return "Card";
     const brandLower = brand.toLowerCase();
     if (brandLower.includes("visa")) return "VISA";
     if (brandLower.includes("mastercard") || brandLower.includes("master")) return "MasterCard";
@@ -270,7 +271,8 @@ export default function PaymentMethodPage() {
     return brand.toUpperCase();
   };
 
-  const formatExpiryDate = (month: number, year: number) => {
+  const formatExpiryDate = (month: number | undefined | null, year: number | undefined | null) => {
+    if (!month || !year) return "--/--";
     const formattedMonth = month.toString().padStart(2, "0");
     const formattedYear = year.toString().slice(-2);
     return `${formattedMonth}/${formattedYear}`;

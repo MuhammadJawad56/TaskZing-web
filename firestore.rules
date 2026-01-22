@@ -127,6 +127,11 @@ service cloud.firestore {
       allow create, update, delete: if isOwner(userId);
     }
     
+    // Allow collectionGroup query for all submissions (needed for getAllShowcases)
+    match /{path=**}/submissions/{submissionId} {
+      allow read: if isAuthenticated();
+    }
+    
     // Showcase bookmarks
     match /showcaseWorkBookmarks/{bookmarkId} {
       allow read: if isAuthenticated() && 
@@ -134,6 +139,31 @@ service cloud.firestore {
       allow create: if isAuthenticated() && 
         request.resource.data.userId == request.auth.uid;
       allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Payment Methods collection
+    match /paymentMethods/{paymentMethodId} {
+      // Users can only read their own payment methods
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      // Users can only create payment methods for themselves
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      // Users can only update/delete their own payment methods
+      allow update, delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Ads/Marketplace collection
+    match /ads/{adId} {
+      // Anyone authenticated can read ads
+      allow read: if isAuthenticated();
+      // Users can create ads for themselves
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      // Users can only update/delete their own ads
+      allow update, delete: if isAuthenticated() && 
         resource.data.userId == request.auth.uid;
     }
     

@@ -340,9 +340,9 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/dashboard" className="flex items-center">
-            <Image
-              src={theme === "dark" ? "/images/logos/Taskzing-Logo-dark-mode_1.png" : "/images/logos/Taskzing-Logo-light-mode_1.png"}
+<Link href="/dashboard" className="flex items-center lg:-ml-[10%]">
+              <Image
+                src={theme === "dark" ? "/images/logos/Taskzing-Logo-dark-mode_1.png" : "/images/logos/Taskzing-Logo-light-mode_1.png"}
               alt="TaskZing"
               width={140}
               height={40}
@@ -352,7 +352,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
           </Link>
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 lg:-mr-[10%]">
             {/* Switch to Client/Provider Button - Hidden on mobile/tablet */}
             <button
               type="button"

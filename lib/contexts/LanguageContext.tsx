@@ -46,6 +46,7 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.chatzing": "Chat Zing",
     "nav.home": "Home",
     "nav.postajob": "Post a Job",
+    "nav.postanad": "Post an Ad",
     "nav.alljobs": "All Jobs",
     
     // Settings
@@ -353,6 +354,7 @@ const translations: Record<Language, Record<string, string>> = {
     "nav.chatzing": "Chat Zing",
     "nav.home": "Accueil",
     "nav.postajob": "Publier un emploi",
+    "nav.postanad": "Publier une annonce",
     "nav.alljobs": "Tous les emplois",
     
     // Settings
