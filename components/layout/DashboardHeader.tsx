@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Bell, Send, Video, Star, Menu, MessageSquare, ArrowLeftRight, Briefcase, Check, CreditCard, X } from "lucide-react";
+import { Bell, Send, Video, Menu, MessageSquare, ArrowLeftRight, Briefcase, Check, CreditCard, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { useRouter } from "next/navigation";
@@ -391,15 +391,32 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
               <Video className="h-5 w-5 text-gray-700 dark:text-white" />
             </button>
 
-            {/* AI Button - Red pill with stars */}
+            {/* AI Button - Gradient Ring Icon */}
             <Link
               href="/dashboard/chatzing-ai"
-              className="px-3 py-1.5 rounded-full bg-red-500 hover:bg-red-600 transition-colors flex items-center justify-center shadow-sm"
+              className="flex items-center justify-center hover:scale-110 transition-transform"
               aria-label="ChatZing AI"
             >
-              <div className="flex items-center justify-center gap-1">
-                <Star className="h-4 w-4 text-white fill-white" />
-                <Star className="h-3.5 w-3.5 text-white fill-white" />
+              <div className="relative w-8 h-8">
+                <svg viewBox="0 0 100 100" className="w-full h-full">
+                  <defs>
+                    <linearGradient id="aiGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#06b6d4" />
+                      <stop offset="25%" stopColor="#3b82f6" />
+                      <stop offset="50%" stopColor="#8b5cf6" />
+                      <stop offset="75%" stopColor="#d946ef" />
+                      <stop offset="100%" stopColor="#ec4899" />
+                    </linearGradient>
+                  </defs>
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="url(#aiGradient)"
+                    strokeWidth="12"
+                  />
+                </svg>
               </div>
             </Link>
 

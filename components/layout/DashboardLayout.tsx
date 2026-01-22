@@ -611,7 +611,20 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
                     : "text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-theme-accent1 hover:text-gray-900 dark:hover:text-white"
                 )}
               >
-                <MessageCircle className="h-5 w-5 flex-shrink-0" />
+                <div className="w-5 h-5 flex-shrink-0">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="aiGradientSidebar" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#06b6d4" />
+                        <stop offset="25%" stopColor="#3b82f6" />
+                        <stop offset="50%" stopColor="#8b5cf6" />
+                        <stop offset="75%" stopColor="#d946ef" />
+                        <stop offset="100%" stopColor="#ec4899" />
+                      </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="url(#aiGradientSidebar)" strokeWidth="14" />
+                  </svg>
+                </div>
                 <span>Chat Zing</span>
               </Link>
               
