@@ -828,7 +828,7 @@ export default function PostAdPage() {
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Post an Ad</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">Sell your items or offer your services across Canada</p>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Sell your items</p>
           </div>
 
           <div className="mb-6 flex gap-3">
