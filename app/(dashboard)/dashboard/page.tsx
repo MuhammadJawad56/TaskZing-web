@@ -7,28 +7,12 @@ import { useAuth } from "@/lib/firebase/AuthContext";
 import { getProposalsByProviderId } from "@/lib/firebase/proposals";
 import { getUserShowcases } from "@/lib/firebase/showcase";
 import { getJobById } from "@/lib/firebase/jobs";
-import { updateDoc, doc, collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { updateDoc, doc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { getUserData } from "@/lib/firebase/auth";
 import { ProposalWithDetails } from "@/lib/types/proposal";
 import { ShowcaseItem } from "@/lib/firebase/showcase";
 import { Task } from "@/lib/types/task";
-import { Megaphone } from "lucide-react";
-
-// Ad type for My Ads section
-interface Ad {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  currency: string;
-  photos: string[];
-  category: string;
-  status: string;
-  createdAt: any;
-  featureAd: boolean;
-  sellItForMe: boolean;
-}
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -43,10 +27,8 @@ export default function DashboardPage() {
   });
   const [showcases, setShowcases] = useState<ShowcaseItem[]>([]);
   const [currentTasks, setCurrentTasks] = useState<Array<{ job: Task; proposal: ProposalWithDetails }>>([]);
-  const [myAds, setMyAds] = useState<Ad[]>([]);
   const [isRefreshingWork, setIsRefreshingWork] = useState(false);
   const [isRefreshingTasks, setIsRefreshingTasks] = useState(false);
-  const [isRefreshingAds, setIsRefreshingAds] = useState(false);
 
   const loadDashboardData = useCallback(async () => {
     if (!user) {
@@ -151,26 +133,6 @@ export default function DashboardPage() {
       const userShowcases = await getUserShowcases(user.uid);
       console.log("[Dashboard] Showcase work fetched:", userShowcases.length);
       setShowcases(userShowcases);
-
-      // Load user's ads
-      console.log("[Dashboard] Fetching user ads");
-      try {
-        const adsQuery = query(
-          collection(db, "ads"),
-          where("userId", "==", user.uid),
-          orderBy("createdAt", "desc")
-        );
-        const adsSnapshot = await getDocs(adsQuery);
-        const userAds = adsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Ad[];
-        console.log("[Dashboard] User ads fetched:", userAds.length);
-        setMyAds(userAds);
-      } catch (adsError) {
-        console.error("[Dashboard] Error fetching ads:", adsError);
-        setMyAds([]);
-      }
       
       console.log("[Dashboard] Dashboard data loaded successfully");
     } catch (error) {
@@ -292,29 +254,6 @@ export default function DashboardPage() {
       console.error("Error refreshing tasks:", error);
     } finally {
       setIsRefreshingTasks(false);
-    }
-  };
-
-  const handleRefreshAds = async () => {
-    if (!user) return;
-
-    try {
-      setIsRefreshingAds(true);
-      const adsQuery = query(
-        collection(db, "ads"),
-        where("userId", "==", user.uid),
-        orderBy("createdAt", "desc")
-      );
-      const adsSnapshot = await getDocs(adsQuery);
-      const userAds = adsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Ad[];
-      setMyAds(userAds);
-    } catch (error) {
-      console.error("Error refreshing ads:", error);
-    } finally {
-      setIsRefreshingAds(false);
     }
   };
 
@@ -455,117 +394,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ))}
-            </div>
-          )}
-        </div>
-
-        {/* My Ads Section */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">My Ads</h2>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => router.push("/post-ad")}
-                className="flex items-center gap-2 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
-              >
-                <Megaphone className="h-4 w-4" />
-                <span>Post Ad</span>
-              </button>
-              <button
-                onClick={handleRefreshAds}
-                disabled={isRefreshingAds}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-              >
-                <RefreshCw 
-                  className={`h-5 w-5 text-blue-500 ${isRefreshingAds ? 'animate-spin' : ''}`} 
-                />
-              </button>
-            </div>
-          </div>
-
-          {myAds.length === 0 ? (
-            <div className="text-center py-12">
-              <Megaphone className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-              <p className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                No Ads Posted
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Post your first ad to sell items
-              </p>
-              <button
-                onClick={() => router.push("/post-ad")}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
-              >
-                Post Your First Ad
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {myAds.slice(0, 6).map((ad) => (
-                <div
-                  key={ad.id}
-                  className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer relative"
-                  onClick={() => router.push(`/post-ad`)}
-                >
-                  {/* Feature/Sell badges */}
-                  <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-                    {ad.featureAd && (
-                      <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-medium rounded">
-                        ⭐ Featured
-                      </span>
-                    )}
-                    {ad.sellItForMe && (
-                      <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-medium rounded">
-                        🤝 Managed
-                      </span>
-                    )}
-                  </div>
-                  {/* Status badge */}
-                  <div className="absolute top-2 right-2 z-10">
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded ${
-                      ad.status === "active" 
-                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                        : ad.status === "sold"
-                        ? "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                        : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
-                    }`}>
-                      {ad.status === "active" ? "Active" : ad.status === "sold" ? "Sold" : "Pending"}
-                    </span>
-                  </div>
-                  {ad.photos && ad.photos.length > 0 ? (
-                    <img
-                      src={ad.photos[0]}
-                      alt={ad.title}
-                      className="w-full h-40 object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-40 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                      <Megaphone className="h-12 w-12 text-gray-400" />
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1 line-clamp-1">
-                      {ad.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1 mb-2">
-                      {ad.category}
-                    </p>
-                    <p className="text-lg font-bold text-red-500">
-                      ${ad.price?.toFixed(2) || "0.00"} {ad.currency || "CAD"}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {myAds.length > 6 && (
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => router.push("/my-ads")}
-                className="text-red-500 hover:text-red-600 text-sm font-medium"
-              >
-                View All Ads ({myAds.length})
-              </button>
             </div>
           )}
         </div>

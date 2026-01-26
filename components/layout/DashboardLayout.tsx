@@ -32,7 +32,7 @@ import {
   Star,
   CreditCard,
   Check,
-  Megaphone,
+  Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { DashboardHeader } from "./DashboardHeader";
@@ -201,7 +201,6 @@ interface NavItem {
 const getDesktopNavItems = (userId: string): NavItem[] => [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Explore", href: "/explore", icon: Compass },
-  { name: "Post an Ad", href: "/post-ad", icon: Megaphone },
   { name: "Showcase", href: "/dashboard/showcase", icon: Briefcase },
   { name: "My Tasks", href: "/dashboard/my-tasks", icon: CheckSquare },
   { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
@@ -226,7 +225,6 @@ const getClientDesktopNavItems = (userId: string): NavItem[] => [
 const getMobileNavItems = (userId: string): NavItem[] => [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Explore", href: "/explore", icon: Compass },
-  { name: "Post an Ad", href: "/post-ad", icon: Megaphone },
   { name: "Showcase Work", href: "/dashboard/showcase", icon: Briefcase },
   { name: "My Tasks", href: "/dashboard/my-tasks", icon: CheckSquare },
   { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
@@ -979,19 +977,19 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
                     <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">Messages</span>
                   </button>
                   
-                  {/* Post an Ad - Center-left, higher on arc */}
+                  {/* Videos - Center-left, higher on arc */}
                   <button
                     onClick={() => {
-                      router.push("/post-ad");
+                      router.push("/dashboard/videos");
                       setIsPlusMenuOpen(false);
                     }}
                     className="absolute flex flex-col items-center"
                     style={{ left: '25%', bottom: '98px' }}
                   >
                     <div className="w-11 h-11 rounded-full bg-primary-500 flex items-center justify-center shadow-lg">
-                      <Megaphone className="h-5 w-5 text-white" />
+                      <Video className="h-5 w-5 text-white" />
                     </div>
-                    <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">Post an Ad</span>
+                    <span className="text-xs font-medium text-gray-700 dark:text-white mt-1">Videos</span>
                   </button>
                   
                   {/* My Tasks - Center-right, higher on arc */}
