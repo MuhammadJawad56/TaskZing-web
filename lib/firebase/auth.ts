@@ -36,6 +36,14 @@ export interface UserData {
   fullName: string | null;
   role: "client" | "provider" | "both";
   currentRole?: "client" | "provider" | "both";
+  providerProfileCompleted?: boolean;
+  location?: string;
+  totalRating?: number;
+  totalReviews?: number;
+  skills?: string[];
+  photoUrl?: string;
+  profilePicture?: string;
+  isVerified?: boolean;
   createdAt: Date;
   updatedAt?: Date;
 }

@@ -61,7 +61,7 @@ export async function getProposalsByJobId(jobId: string): Promise<ProposalWithDe
                   if (providerData) {
                     provider = {
                       id: proposal.providerId,
-                      fullName: providerData.fullName || providerData.name || "Unknown Provider",
+                      fullName: providerData.fullName || "Unknown Provider",
                       photoUrl: providerData.photoUrl || providerData.profilePicture,
                       totalRating: providerData.totalRating || 0,
                       totalReviews: providerData.totalReviews || 0,
@@ -122,7 +122,7 @@ export async function getProposalsByJobId(jobId: string): Promise<ProposalWithDe
                     if (providerData) {
                       provider = {
                         id: proposal.providerId,
-                        fullName: providerData.fullName || providerData.name || "Unknown Provider",
+                        fullName: providerData.fullName || "Unknown Provider",
                         photoUrl: providerData.photoUrl || providerData.profilePicture,
                         totalRating: providerData.totalRating || 0,
                         totalReviews: providerData.totalReviews || 0,

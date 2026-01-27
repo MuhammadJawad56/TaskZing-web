@@ -466,7 +466,7 @@ export default function MessagesPage() {
                   </div>
                   {room.lastMessage?.text && (
                     <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                      {typeof room.lastMessage.text === "string" ? room.lastMessage.text : room.lastMessage.text?.text || ""}
+                      {room.lastMessage.text}
                     </p>
                   )}
                 </div>
@@ -635,7 +635,7 @@ export default function MessagesPage() {
                                     "text-sm whitespace-pre-wrap break-words leading-relaxed",
                                     isDeleted && "italic text-gray-500 dark:text-gray-400"
                                   )}>
-                                    {isDeleted ? "This message was deleted" : (typeof message.text === "string" ? message.text : message.text?.text || "")}
+                                    {isDeleted ? "This message was deleted" : (message.text || "")}
                                   </p>
                                   {message.mediaUrl && !isDeleted && (
                                     <div className="mt-2 -mx-3 -mb-2">

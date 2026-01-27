@@ -1236,7 +1236,7 @@ export async function markMessagesAsRead(
   const collectionsToTry = [
     roomCollection,
     ...COLLECTION_NAMES.chatRooms.filter((c) => c !== roomCollection),
-  ];
+  ].filter((c): c is string => c !== null);
 
   for (const collectionName of collectionsToTry) {
     try {
@@ -1293,7 +1293,7 @@ async function incrementUnreadCount(
   const collectionsToTry = [
     roomCollection,
     ...COLLECTION_NAMES.chatRooms.filter((c) => c !== roomCollection),
-  ];
+  ].filter((c): c is string => c !== null);
 
   for (const collectionName of collectionsToTry) {
     try {

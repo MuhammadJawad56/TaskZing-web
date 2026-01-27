@@ -60,12 +60,8 @@ export default function DashboardPage() {
       const proposals = await getProposalsByProviderId(user.uid);
       console.log("[Dashboard] Total proposals fetched:", proposals.length);
       
-      // Filter only hired proposals - also check for status "hired" or "accepted"
-      const hiredProposals = proposals.filter(p => {
-        const isHired = p.isHired === true;
-        const isAccepted = p.status === "accepted" || (p as any).status === "hired";
-        return isHired || isAccepted;
-      });
+      // Filter only hired proposals
+      const hiredProposals = proposals.filter(p => p.isHired === true);
       console.log("[Dashboard] Hired proposals:", hiredProposals.length);
       console.log("[Dashboard] Sample hired proposals:", hiredProposals.slice(0, 3).map(p => ({
         applicationId: p.applicationId,

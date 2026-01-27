@@ -12,7 +12,7 @@ import {
 import { ArrowLeft, CreditCard, Plus, Trash2, X } from "lucide-react";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
-import { collection, query, where, getDocs, addDoc, deleteDoc, Timestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, deleteDoc, doc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 
 // Initialize Stripe - Replace with your publishable key

@@ -190,10 +190,11 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
   // Check if user has provider profile
   useEffect(() => {
     if (userData) {
-      const hasProvider = 
-        userData.role === "client+provider" || 
+      const hasProvider = Boolean(
+        userData.role === "both" || 
         userData.providerProfileCompleted === true ||
-        (userData.skills && userData.skills.length > 0);
+        (userData.skills && userData.skills.length > 0)
+      );
       setHasProviderProfile(hasProvider);
     } else {
       setHasProviderProfile(false);
@@ -251,7 +252,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
     try {
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, {
-        role: "client+provider",
+        role: "both",
         currentRole: "provider",
         skills: selectedSkills,
         bio: serviceDescription.trim(),

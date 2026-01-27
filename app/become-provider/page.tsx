@@ -221,7 +221,7 @@ export default function BecomeProviderPage() {
   // Check if user is already a provider
   useEffect(() => {
     if (userData) {
-      if (userData.role === "client+provider" || userData.providerProfileCompleted) {
+      if (userData.role === "both" || userData.providerProfileCompleted) {
         // Already a provider, redirect to dashboard
         router.push("/dashboard");
         return;
@@ -289,7 +289,7 @@ export default function BecomeProviderPage() {
       
       // Update user role to include provider
       await updateDoc(userRef, {
-        role: "client+provider",
+        role: "both",
         currentRole: "provider",
         skills: selectedSkills,
         bio: serviceDescription.trim(),

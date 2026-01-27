@@ -44,7 +44,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isOwn }) => {
           )}
         >
           <p className="text-sm whitespace-pre-wrap">
-            {typeof message.text === "string" ? message.text : message.text?.text || ""}
+            {message.text || ""}
           </p>
         </div>
         <span className="text-xs text-theme-accent4 mt-1 block">

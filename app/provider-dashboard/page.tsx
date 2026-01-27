@@ -17,7 +17,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 export default function ProviderDashboardPage() {
   const router = useRouter();
-  const { user, userData } = useAuth();
+  const { user, userData, loading: authLoading } = useAuth();
   const [isAvailable, setIsAvailable] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState({
@@ -61,12 +61,8 @@ export default function ProviderDashboardPage() {
       const proposals = await getProposalsByProviderId(user.uid);
       console.log("[Dashboard] Total proposals fetched:", proposals.length);
       
-      // Filter only hired proposals - also check for status "hired" or "accepted"
-      const hiredProposals = proposals.filter(p => {
-        const isHired = p.isHired === true;
-        const isAccepted = p.status === "accepted" || (p as any).status === "hired";
-        return isHired || isAccepted;
-      });
+      // Filter only hired proposals
+      const hiredProposals = proposals.filter(p => p.isHired === true);
       console.log("[Dashboard] Hired proposals:", hiredProposals.length);
       console.log("[Dashboard] Sample hired proposals:", hiredProposals.slice(0, 3).map(p => ({
         applicationId: p.applicationId,
@@ -149,22 +145,31 @@ export default function ProviderDashboardPage() {
   }, [user, userData]);
 
   useEffect(() => {
-    console.log("[Dashboard] useEffect triggered - user:", !!user, "userData:", !!userData);
-    if (user && userData) {
-      console.log("[Dashboard] Calling loadDashboardData");
-      loadDashboardData();
-    } else if (!user) {
+    console.log("[Dashboard] useEffect triggered - user:", !!user, "userData:", !!userData, "authLoading:", authLoading);
+    
+    // If auth is still loading, wait
+    if (authLoading) {
+      console.log("[Dashboard] Auth still loading, waiting...");
+      return;
+    }
+    
+    // If no user, stop loading
+    if (!user) {
       console.log("[Dashboard] No user, setting loading to false");
       setIsLoading(false);
-    } else {
-      console.log("[Dashboard] Waiting for userData...");
+      return;
     }
-  }, [user, userData, loadDashboardData]);
+    
+    // Load dashboard data even if userData is not yet available
+    // userData will be fetched inside loadDashboardData if needed
+    console.log("[Dashboard] Calling loadDashboardData");
+    loadDashboardData();
+  }, [user, userData, authLoading, loadDashboardData]);
 
   // Refresh data when page becomes visible (e.g., returning from another tab)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden && user && userData) {
+      if (!document.hidden && user && !authLoading) {
         loadDashboardData();
       }
     };
@@ -173,7 +178,7 @@ export default function ProviderDashboardPage() {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [user, userData, loadDashboardData]);
+  }, [user, authLoading, loadDashboardData]);
 
   const handleToggleAvailability = async () => {
     if (!user) return;

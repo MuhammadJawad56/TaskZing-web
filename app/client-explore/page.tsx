@@ -177,6 +177,7 @@ function ShowcaseTile({ item, meta, skills, onSaveToggle, savedShowcaseIds, savi
 }
 
 export default function ClientExplorePage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [showcases, setShowcases] = useState<ShowcaseItem[]>([]);
   const [loading, setLoading] = useState(true);

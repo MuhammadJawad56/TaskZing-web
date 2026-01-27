@@ -1978,7 +1978,7 @@ export default function PostTaskPage() {
                     preventDefault: () => {},
                     target: e.currentTarget,
                     currentTarget: e.currentTarget,
-                  } as React.FormEvent<HTMLFormElement>;
+                  } as unknown as React.FormEvent<HTMLFormElement>;
                   
                   await handleSubmit(syntheticEvent);
                 }}

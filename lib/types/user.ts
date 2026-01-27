@@ -26,6 +26,9 @@ export interface User {
   rate?: number; // Hourly rate for providers
   completedAt?: number; // Completed jobs count
   skills?: string[];
+  postingAs?: "individual" | "company" | "instore";
+  companyName?: string;
+  storeName?: string;
   createdAt: string;
   updatedAt: string;
 }

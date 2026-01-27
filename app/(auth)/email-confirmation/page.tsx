@@ -7,6 +7,7 @@ import Image from "next/image";
 import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { resendEmailVerification, getCurrentUser } from "@/lib/firebase/auth";
+import { isProfileComplete } from "@/lib/firebase/users";
 import { useTheme } from "@/lib/contexts/ThemeContext";
 
 export default function EmailConfirmationPage() {

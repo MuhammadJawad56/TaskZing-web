@@ -24,10 +24,6 @@ const Popup = dynamic(
   () => import("react-leaflet").then((mod) => mod.Popup),
   { ssr: false }
 );
-const useMap = dynamic(
-  () => import("react-leaflet").then((mod) => mod.useMap),
-  { ssr: false }
-) as any;
 
 // Component to handle map operations
 function MapController({ 
@@ -39,8 +35,9 @@ function MapController({
   userLocation: { lat: number; lng: number } | null;
   centerOnUser: boolean;
 }) {
-  const MapHook = require("react-leaflet").useMap;
-  const map = MapHook();
+  // Import useMap hook directly (hooks can't be dynamically imported)
+  const { useMap } = require("react-leaflet");
+  const map = useMap();
 
   useEffect(() => {
     if (centerOnUser && userLocation) {
