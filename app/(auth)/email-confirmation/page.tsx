@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { resendEmailVerification, getCurrentUser } from "@/lib/firebase/auth";
+import { resendEmailVerification, getCurrentUser, getUserData } from "@/lib/firebase/auth";
 import { isProfileComplete } from "@/lib/firebase/users";
 import { useTheme } from "@/lib/contexts/ThemeContext";
 
@@ -29,7 +29,17 @@ export default function EmailConfirmationPage() {
         if (!profileComplete) {
           router.push("/initial-profile");
         } else {
-          router.push("/dashboard");
+          // Get user data to determine role
+          const userData = await getUserData(user.uid);
+          const currentRole = userData?.currentRole || userData?.role || "provider";
+          const role = userData?.role || "client";
+          
+          // Redirect clients to client-home, providers to dashboard
+          if (role === "client" && currentRole === "client") {
+            router.push("/client-home");
+          } else {
+            router.push("/dashboard");
+          }
         }
       }
     };

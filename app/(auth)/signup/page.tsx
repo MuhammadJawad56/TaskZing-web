@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
-import { signUp, signInWithGoogle, signInWithApple, handleAppleRedirect } from "@/lib/firebase/auth";
+import { signUp, signInWithGoogle, signInWithApple, handleAppleRedirect, getUserData } from "@/lib/firebase/auth";
 import { isProfileComplete } from "@/lib/firebase/users";
 import { FirebaseError } from "firebase/app";
 import { Eye, EyeOff } from "lucide-react";
@@ -37,7 +37,17 @@ export default function SignupPage() {
         if (!profileComplete) {
           router.push("/initial-profile");
         } else {
-          router.push("/dashboard");
+          // Get user data to determine role
+          const userData = await getUserData(result.user.uid);
+          const currentRole = userData?.currentRole || userData?.role || "provider";
+          const role = userData?.role || "client";
+          
+          // Redirect clients to client-home, providers to dashboard
+          if (role === "client" && currentRole === "client") {
+            router.push("/client-home");
+          } else {
+            router.push("/dashboard");
+          }
         }
       }
     }).catch((err) => {
@@ -82,7 +92,17 @@ export default function SignupPage() {
       if (!profileComplete) {
         router.push("/initial-profile");
       } else {
-        router.push("/dashboard");
+        // Get user data to determine role
+        const userData = await getUserData(userCredential.user.uid);
+        const currentRole = userData?.currentRole || userData?.role || "provider";
+        const role = userData?.role || "client";
+        
+        // Redirect clients to client-home, providers to dashboard
+        if (role === "client" && currentRole === "client") {
+          router.push("/client-home");
+        } else {
+          router.push("/dashboard");
+        }
       }
     } catch (err) {
       if (err instanceof FirebaseError) {
@@ -107,7 +127,17 @@ export default function SignupPage() {
       if (!profileComplete) {
         router.push("/initial-profile");
       } else {
-        router.push("/dashboard");
+        // Get user data to determine role
+        const userData = await getUserData(userCredential.user.uid);
+        const currentRole = userData?.currentRole || userData?.role || "provider";
+        const role = userData?.role || "client";
+        
+        // Redirect clients to client-home, providers to dashboard
+        if (role === "client" && currentRole === "client") {
+          router.push("/client-home");
+        } else {
+          router.push("/dashboard");
+        }
       }
     } catch (err) {
       console.error("Apple Sign-in Error:", err);
