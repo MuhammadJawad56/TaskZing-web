@@ -34,7 +34,7 @@ export interface UserData {
   uid: string;
   email: string | null;
   fullName: string | null;
-  role: "client" | "provider" | "both";
+  role: "client" | "provider" | "both" | "client+provider";
   currentRole?: "client" | "provider" | "both";
   providerProfileCompleted?: boolean;
   location?: string;
@@ -53,7 +53,7 @@ export async function signUp(
   email: string,
   password: string,
   fullName: string,
-  role: "client" | "provider"
+  role: "client" | "provider" | "client+provider"
 ): Promise<UserCredential> {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   
@@ -65,13 +65,16 @@ export async function signUp(
   // Send email verification
   await sendEmailVerification(userCredential.user);
 
+  // Determine currentRole based on role
+  const currentRole = role === "client+provider" ? "provider" : role;
+
   // Store additional user data in Firestore
   await setDoc(doc(db, "users", userCredential.user.uid), {
     uid: userCredential.user.uid,
     email: email,
     fullName: fullName,
     role: role,
-    currentRole: role,
+    currentRole: currentRole,
     emailVerified: false,
     createdAt: new Date(),
   });

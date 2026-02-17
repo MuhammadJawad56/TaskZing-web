@@ -48,6 +48,7 @@ export const Header: React.FC = () => {
               height={40}
               className="h-10 w-auto"
               priority
+              suppressHydrationWarning
             />
           </Link>
 

@@ -24,9 +24,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const initializedRef = useRef(false);
+  const previousRoleRef = useRef<string | null>(null);
+  
+  // Use router hooks - must be called unconditionally
   const router = useRouter();
   const pathname = usePathname();
-  const previousRoleRef = useRef<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -97,6 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Only run in browser environment
     if (typeof window === "undefined") return;
     if (loading || !user || !userData) return;
+    if (!router) return; // Skip if router not available
 
     const currentRole = userData?.currentRole || userData?.role || "provider";
     const previousRole = previousRoleRef.current;

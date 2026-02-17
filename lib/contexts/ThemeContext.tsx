@@ -27,16 +27,50 @@ function applyThemeToDom(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("light");
+  // Read theme from DOM dataset (set by script in layout.tsx) to match what's already rendered
+  // This prevents hydration mismatches by ensuring React state matches the DOM
+  const getInitialTheme = (): Theme => {
+    if (typeof window !== "undefined" && typeof document !== "undefined") {
+      // Check what the script already set on the DOM (script runs beforeInteractive)
+      const themeFromDom = document.documentElement.dataset.theme as Theme | undefined;
+      if (themeFromDom === "dark" || themeFromDom === "light") {
+        return themeFromDom;
+      }
+      // Fallback to localStorage if DOM doesn't have it yet
+      try {
+        const savedTheme = localStorage.getItem("theme") as Theme | null;
+        return savedTheme === "dark" ? "dark" : "light";
+      } catch {
+        return "light";
+      }
+    }
+    return "light";
+  };
+
+  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as Theme | null;
-    const initialTheme: Theme = savedTheme === "dark" ? "dark" : "light";
-
-    applyThemeToDom(initialTheme);
-    setThemeState(initialTheme);
+    // Sync with localStorage after mount to ensure consistency
+    // This only runs once on mount
+    try {
+      const savedTheme = localStorage.getItem("theme") as Theme | null;
+      const initialTheme: Theme = savedTheme === "dark" ? "dark" : "light";
+      
+      // Check current theme state and update if needed
+      setThemeState((currentTheme) => {
+        if (initialTheme !== currentTheme) {
+          applyThemeToDom(initialTheme);
+          return initialTheme;
+        }
+        return currentTheme;
+      });
+    } catch (error) {
+      // localStorage might not be available
+      console.warn("Failed to read theme from localStorage:", error);
+    }
     setMounted(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -57,10 +91,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
   };
-
-  if (!mounted) {
-    return <>{children}</>;
-  }
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
