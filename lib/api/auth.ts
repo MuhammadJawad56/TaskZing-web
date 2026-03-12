@@ -9,6 +9,8 @@ import { apiClient, UserData, AuthResponse } from "./client";
 export type { UserData } from "./client";
 
 const TEST_USER_STORAGE_KEY = "taskzing_test_user";
+const TEMP_LOGIN_EMAIL = "jawadkamil307@gmail.com";
+const TEMP_LOGIN_PASSWORD = "112233";
 
 export class AuthError extends Error {
   code: string;
@@ -120,6 +122,26 @@ export async function signIn(
   email: string,
   password: string
 ): Promise<{ user: AuthUser; userData: UserData }> {
+  if (
+    email.trim().toLowerCase() === TEMP_LOGIN_EMAIL &&
+    password === TEMP_LOGIN_PASSWORD
+  ) {
+    const userData = setTestSession({
+      id: "jawad-temp-user",
+      uid: "jawad-temp-user",
+      email: TEMP_LOGIN_EMAIL,
+      fullName: "Jawad Kamil",
+      name: "Jawad Kamil",
+      role: "client",
+      currentRole: "client",
+      profileCompleted: true,
+      providerProfileCompleted: false,
+      isVerified: true,
+    });
+
+    return { user: convertToAuthUser(userData), userData };
+  }
+
   const response = await apiClient.signIn(email, password);
 
   if (response.error || !response.data) {

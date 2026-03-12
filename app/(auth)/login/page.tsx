@@ -117,7 +117,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error("Google Sign-in Error:", err);
-      setError(`An error occurred: ${err instanceof Error ? err.message : "Unknown error"}`);
+        setError(`An error occurred: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
       setIsGoogleLoading(false);
     }

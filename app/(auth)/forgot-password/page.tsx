@@ -23,7 +23,7 @@ export default function ForgotPasswordPage() {
       setIsSubmitted(true);
     } catch (err) {
       if (err instanceof Error && err.message.includes("user-not-found")) {
-        setIsSubmitted(true);
+          setIsSubmitted(true);
       } else {
         setError("An error occurred. Please try again.");
       }
