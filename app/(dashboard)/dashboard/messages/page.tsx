@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/firebase/AuthContext";
+import { useAuth } from "@/lib/api/AuthContext";
 import { ChatRoomWithParticipants } from "@/lib/types/message";
 import { cn } from "@/lib/utils/cn";
 import {
   getChatRoomsByUserId,
   subscribeToChatRooms,
-} from "@/lib/firebase/messages";
+} from "@/lib/api/messages";
 import { MessageSquare, RefreshCw } from "lucide-react";
 
 export default function MessagesPage() {

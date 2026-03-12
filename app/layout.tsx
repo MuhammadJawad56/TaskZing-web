@@ -1,10 +1,10 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Script from "next/script";
 import { Inter, Inter_Tight } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { ConditionalFooter } from "@/components/layout/ConditionalFooter";
-import { AuthProvider } from "@/lib/firebase/AuthContext";
+import { AuthProvider } from "@/lib/api/AuthContext";
 import { ThemeProvider } from "@/lib/contexts/ThemeContext";
 import { LanguageProvider } from "@/lib/contexts/LanguageContext";
 

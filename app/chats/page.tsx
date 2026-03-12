@@ -6,12 +6,12 @@ import { MessageSquare, RefreshCw, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useAuth } from "@/lib/firebase/AuthContext";
+import { useAuth } from "@/lib/api/AuthContext";
 import { ChatRoomWithParticipants } from "@/lib/types/message";
 import {
   getChatRoomsByUserId,
   subscribeToChatRooms,
-} from "@/lib/firebase/messages";
+} from "@/lib/api/messages";
 import { cn } from "@/lib/utils/cn";
 
 export default function ChatsPage() {

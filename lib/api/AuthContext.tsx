@@ -1,12 +1,11 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
-import { User } from "firebase/auth";
 import { useRouter, usePathname } from "next/navigation";
-import { onAuthChange, getUserData, UserData, signOut } from "./auth";
+import { onAuthChange, getUserData, signOut, AuthUser, UserData } from "./auth";
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   userData: UserData | null;
   loading: boolean;
   logout: () => Promise<void>;
@@ -20,7 +19,7 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const initializedRef = useRef(false);
@@ -35,16 +34,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let unsubscribe: (() => void) | null = null;
 
     try {
-      unsubscribe = onAuthChange(async (firebaseUser) => {
+      unsubscribe = onAuthChange(async (authUser) => {
         if (!isMounted) return;
         
         try {
-          setUser(firebaseUser);
+          setUser(authUser);
           
-          if (firebaseUser) {
-            // Fetch additional user data from Firestore
+          if (authUser) {
+            // Fetch additional user data from backend
             try {
-              const data = await getUserData(firebaseUser.uid);
+              const data = await getUserData(authUser.uid);
               if (isMounted) {
                 setUserData(data);
               }
@@ -117,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      // Clear Firebase auth state
+      // Clear backend auth state
       await signOut();
       
       // Clear local state
@@ -125,7 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserData(null);
     } catch (error) {
       console.error("Logout error in AuthContext:", error);
-      // Still clear local state even if Firebase signOut fails
+      // Still clear local state even if backend signOut fails
       setUser(null);
       setUserData(null);
       throw error; // Re-throw to let the caller handle it
@@ -146,4 +145,3 @@ export function useAuth() {
   }
   return context;
 }
-

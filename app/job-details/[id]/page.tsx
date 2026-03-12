@@ -3,13 +3,13 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Share2, MessageCircle, MapPin, Calendar, Briefcase, ChevronLeft, ChevronRight, X, DollarSign, Clock, User } from "lucide-react";
-import { getJobById } from "@/lib/firebase/jobs";
-import { getUserById } from "@/lib/firebase/users";
+import { getJobById } from "@/lib/api/jobs";
+import { getUserById } from "@/lib/api/users";
 import { Task } from "@/lib/types/task";
 import { User as UserType } from "@/lib/types/user";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useAuth } from "@/lib/firebase/AuthContext";
-import { getOrCreateChatRoom } from "@/lib/firebase/messages";
+import { useAuth } from "@/lib/api/AuthContext";
+import { getOrCreateChatRoom } from "@/lib/api/messages";
 
 export default function JobDetailsPage() {
   const params = useParams();

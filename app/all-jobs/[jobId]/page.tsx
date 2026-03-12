@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Clock, Building2, Calendar, MapPin, ArrowLeft, Users, Trash2, Briefcase, AlertTriangle } from "lucide-react";
-import { useAuth } from "@/lib/firebase/AuthContext";
-import { getJobById, deleteJob } from "@/lib/firebase/jobs";
-import { getProposalCounts } from "@/lib/firebase/proposals";
+import { useAuth } from "@/lib/api/AuthContext";
+import { getJobById, deleteJob } from "@/lib/api/jobs";
+import { getProposalCounts } from "@/lib/api/proposals";
 import { Task } from "@/lib/types/task";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 

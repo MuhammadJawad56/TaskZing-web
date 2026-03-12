@@ -3,14 +3,14 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Share2, MessageCircle, MapPin, Calendar, Briefcase, ChevronLeft, ChevronRight, X } from "lucide-react";
-import { getShowcaseItem } from "@/lib/firebase/showcase";
-import { getUserById } from "@/lib/firebase/users";
-import { getJobsByClientId } from "@/lib/firebase/jobs";
-import { ShowcaseItem } from "@/lib/firebase/showcase";
+import { getShowcaseItem } from "@/lib/api/showcase";
+import { getUserById } from "@/lib/api/users";
+import { getJobsByClientId } from "@/lib/api/jobs";
+import { ShowcaseItem } from "@/lib/api/showcase";
 import { User } from "@/lib/types/user";
 import { Task } from "@/lib/types/task";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useAuth } from "@/lib/firebase/AuthContext";
+import { useAuth } from "@/lib/api/AuthContext";
 
 export default function WorkDetailsPage() {
   const params = useParams();
@@ -31,7 +31,7 @@ export default function WorkDetailsPage() {
       setLoading(true);
       try {
         // Fetch showcase item - search through all showcases to find by ID
-        const { getAllShowcases } = await import("@/lib/firebase/showcase");
+        const { getAllShowcases } = await import("@/lib/api/showcase");
         const allShowcases = await getAllShowcases();
         const foundShowcase = allShowcases.find((s) => s.id === showcaseId);
 

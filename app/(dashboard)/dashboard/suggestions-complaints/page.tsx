@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import { useAuth } from "@/lib/firebase/AuthContext";
+import { useAuth } from "@/lib/api/AuthContext";
 
 export default function SuggestionsComplaintsPage() {
   const router = useRouter();

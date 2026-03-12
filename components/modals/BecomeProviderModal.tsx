@@ -3,13 +3,12 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, Briefcase, Check, CreditCard, Plus } from "lucide-react";
-import { useAuth } from "@/lib/firebase/AuthContext";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+import { useAuth } from "@/lib/api/AuthContext";
+import { updateUserProfile } from "@/lib/api/auth";
+import { addStoredPaymentMethod, getStoredPaymentMethods } from "@/lib/api/payments";
 import { Button } from "@/components/ui/Button";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { collection, query, where, getDocs, addDoc, Timestamp } from "firebase/firestore";
 
 // Initialize Stripe only if key is available
 const getStripePromise = () => {
@@ -98,30 +97,18 @@ function PaymentCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
         return;
       }
 
-      // Save payment method to Firestore
       const paymentMethodData = {
-        userId: user.uid,
+        id: token.id,
         tokenId: token.id,
         cardBrand: token.card?.brand || "unknown",
-        cardLast4: token.card?.last4 || "0000",
+        last4: token.card?.last4 || "0000",
+        expMonth: token.card?.exp_month || 0,
+        expYear: token.card?.exp_year || 0,
         cardholderName: cardholderName.trim(),
-        createdAt: Timestamp.now(),
+        createdAt: new Date().toISOString(),
         isDefault: true,
       };
-
-      // Check if user already has payment methods
-      const paymentMethodsQuery = query(
-        collection(db, "paymentMethods"),
-        where("userId", "==", user.uid)
-      );
-      const existingMethods = await getDocs(paymentMethodsQuery);
-
-      // If this is the first payment method, set it as default
-      if (existingMethods.empty) {
-        paymentMethodData.isDefault = true;
-      }
-
-      await addDoc(collection(db, "paymentMethods"), paymentMethodData);
+      addStoredPaymentMethod(user.uid, paymentMethodData);
 
       onSuccess();
     } catch (err: any) {
@@ -242,12 +229,7 @@ export const BecomeProviderModal: React.FC<BecomeProviderModalProps> = ({
       if (!user) return;
 
       try {
-        const paymentMethodsQuery = query(
-          collection(db, "paymentMethods"),
-          where("userId", "==", user.uid)
-        );
-        const snapshot = await getDocs(paymentMethodsQuery);
-        setHasPaymentMethod(!snapshot.empty);
+        setHasPaymentMethod(getStoredPaymentMethods(user.uid).length > 0);
       } catch (error) {
         console.error("Error checking payment methods:", error);
       }
@@ -291,17 +273,13 @@ export const BecomeProviderModal: React.FC<BecomeProviderModalProps> = ({
     setError("");
 
     try {
-      const userRef = doc(db, "users", user.uid);
-      
-      // Update user role to include provider
-      await updateDoc(userRef, {
+      await updateUserProfile(user.uid, {
         role: "client+provider",
         currentRole: "provider",
         skills: selectedSkills,
         bio: serviceDescription.trim(),
         about: serviceDescription.trim(),
         providerProfileCompleted: true,
-        updatedAt: new Date(),
       });
 
       onComplete();

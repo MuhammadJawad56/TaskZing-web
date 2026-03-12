@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Card, CardContent } from "@/components/ui/Card";
-import { useAuth } from "@/lib/firebase/AuthContext";
+import { useAuth } from "@/lib/api/AuthContext";
 import {
   createShowcaseItem,
   uploadShowcaseImages,
@@ -15,7 +15,7 @@ import {
   getUserShowcases,
   deleteShowcaseItem,
   ShowcaseItem,
-} from "@/lib/firebase/showcase";
+} from "@/lib/api/showcase";
 import { cn } from "@/lib/utils/cn";
 
 export default function ShowcasePage() {

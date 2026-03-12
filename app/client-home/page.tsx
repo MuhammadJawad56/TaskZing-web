@@ -14,9 +14,9 @@ import {
   unbookmarkShowcase,
   getUserBookmarkedShowcases,
   isShowcaseBookmarked,
-} from "@/lib/firebase/showcase";
-import { getUserData } from "@/lib/firebase/auth";
-import { useAuth } from "@/lib/firebase/AuthContext";
+} from "@/lib/api/showcase";
+import { getUserData } from "@/lib/api/auth";
+import { useAuth } from "@/lib/api/AuthContext";
 import { QRCodeSVG } from "qrcode.react";
 import Image from "next/image";
 import { useTheme } from "@/lib/contexts/ThemeContext";

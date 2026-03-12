@@ -10,10 +10,14 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { ArrowLeft, CreditCard, Plus, Trash2, X } from "lucide-react";
-import { useAuth } from "@/lib/firebase/AuthContext";
+import { useAuth } from "@/lib/api/AuthContext";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
-import { collection, query, where, getDocs, addDoc, deleteDoc, doc, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+import {
+  addStoredPaymentMethod,
+  getStoredPaymentMethods,
+  removeStoredPaymentMethod,
+  type PaymentMethod,
+} from "@/lib/api/payments";
 
 // Initialize Stripe - Replace with your publishable key
 const stripePromise = loadStripe(
@@ -39,16 +43,6 @@ const cardElementOptions = {
   },
   hidePostalCode: false,
 };
-
-interface PaymentMethod {
-  id: string;
-  paymentMethodId: string;
-  cardBrand: string;
-  last4: string;
-  expMonth: number;
-  expYear: number;
-  createdAt: Timestamp;
-}
 
 // Payment Form Component (Modal)
 function AddPaymentForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
@@ -112,18 +106,17 @@ function AddPaymentForm({ onClose, onSuccess }: { onClose: () => void; onSuccess
         return;
       }
 
-      // Save payment method to Firestore
-      const paymentMethodData = {
-        userId: user.uid,
+      const paymentMethodData: PaymentMethod = {
+        id: paymentMethod.id,
         paymentMethodId: paymentMethod.id,
         cardBrand: paymentMethod.card?.brand || "unknown",
         last4: paymentMethod.card?.last4 || "",
         expMonth: paymentMethod.card?.exp_month || 0,
         expYear: paymentMethod.card?.exp_year || 0,
-        createdAt: Timestamp.now(),
+        createdAt: new Date().toISOString(),
+        cardholderName,
       };
-
-      await addDoc(collection(db, "paymentMethods"), paymentMethodData);
+      addStoredPaymentMethod(user.uid, paymentMethodData);
 
       // Success - close modal and refresh list
       onSuccess();
@@ -220,19 +213,10 @@ export default function PaymentMethodPage() {
 
     setLoading(true);
     try {
-      const q = query(
-        collection(db, "paymentMethods"),
-        where("userId", "==", user.uid)
+      const methods = getStoredPaymentMethods(user.uid).sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
-      const snapshot = await getDocs(q);
-      const methods = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as PaymentMethod[];
-      
-      // Sort by creation date (newest first)
-      methods.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-      
       setPaymentMethods(methods);
     } catch (error) {
       console.error("Error loading payment methods:", error);
@@ -248,10 +232,7 @@ export default function PaymentMethodPage() {
 
     setDeletingId(docId);
     try {
-      // Delete from Firestore
-      await deleteDoc(doc(db, "paymentMethods", docId));
-      
-      // Reload payment methods
+      removeStoredPaymentMethod(user.uid, paymentMethodId);
       await loadPaymentMethods();
     } catch (error) {
       console.error("Error deleting payment method:", error);

@@ -5,14 +5,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { Bell, Send, Menu, MessageSquare, ArrowLeftRight, Briefcase, Check, CreditCard, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { useAuth } from "@/lib/firebase/AuthContext";
+import { useAuth } from "@/lib/api/AuthContext";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 import { useTheme } from "@/lib/contexts/ThemeContext";
-import { switchUserRole } from "@/lib/firebase/auth";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs, addDoc, Timestamp } from "firebase/firestore";
+import { switchUserRole, updateUserProfile } from "@/lib/api/auth";
+import { addStoredPaymentMethod, getStoredPaymentMethods } from "@/lib/api/payments";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
@@ -100,19 +98,17 @@ function PaymentCardForm({ onSuccess, onCancel, userEmail }: { onSuccess: () => 
         return;
       }
 
-      // Save payment method to Firestore
       const paymentMethodData = {
-        userId: user.uid,
+        id: paymentMethod.id,
         paymentMethodId: paymentMethod.id,
         last4: paymentMethod.card?.last4,
-        brand: paymentMethod.card?.brand,
-        exp_month: paymentMethod.card?.exp_month,
-        exp_year: paymentMethod.card?.exp_year,
+        cardBrand: paymentMethod.card?.brand || "unknown",
+        expMonth: paymentMethod.card?.exp_month || 0,
+        expYear: paymentMethod.card?.exp_year || 0,
         cardholderName: cardholderName.trim(),
-        createdAt: Timestamp.now(),
+        createdAt: new Date().toISOString(),
       };
-
-      await addDoc(collection(db, "paymentMethods"), paymentMethodData);
+      addStoredPaymentMethod(user.uid, paymentMethodData);
       onSuccess();
     } catch (err: any) {
       console.error("Error creating payment method:", err);
@@ -206,12 +202,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
     const checkPaymentMethods = async () => {
       if (!user) return;
       try {
-        const paymentMethodsQuery = query(
-          collection(db, "paymentMethods"),
-          where("userId", "==", user.uid)
-        );
-        const snapshot = await getDocs(paymentMethodsQuery);
-        setHasPaymentMethod(!snapshot.empty);
+        setHasPaymentMethod(getStoredPaymentMethods(user.uid).length > 0);
       } catch (error) {
         console.error("Error checking payment methods:", error);
       }
@@ -250,15 +241,13 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMenuToggle, 
     setProviderError("");
 
     try {
-      const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, {
+      await updateUserProfile(user.uid, {
         role: "both",
         currentRole: "provider",
         skills: selectedSkills,
         bio: serviceDescription.trim(),
         about: serviceDescription.trim(),
         providerProfileCompleted: true,
-        updatedAt: new Date(),
       });
 
       setShowBecomeProviderModal(false);

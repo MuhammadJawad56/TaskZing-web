@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useAuth } from "@/lib/firebase/AuthContext";
+import { useAuth } from "@/lib/api/AuthContext";
 import { ChatRoomWithParticipants, MessageWithSender } from "@/lib/types/message";
 import { Task } from "@/lib/types/task";
 import { cn } from "@/lib/utils/cn";
@@ -14,8 +14,8 @@ import {
   deleteMessageForMe,
   deleteMessageForEveryone,
   markMessagesAsRead,
-} from "@/lib/firebase/messages";
-import { getJobById } from "@/lib/firebase/jobs";
+} from "@/lib/api/messages";
+import { getJobById } from "@/lib/api/jobs";
 import { RefreshCw, AlertCircle, MessageSquare, Send, MoreVertical, Trash2, Camera } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

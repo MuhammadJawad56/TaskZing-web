@@ -22,8 +22,8 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { Task } from "@/lib/types/task";
-import { getOpenJobs, searchJobs, getJobsNearLocation, getJobsByCategory } from "@/lib/firebase/jobs";
-import { useAuth } from "@/lib/firebase/AuthContext";
+import { getOpenJobs, searchJobs, getJobsNearLocation, getJobsByCategory } from "@/lib/api/jobs";
+import { useAuth } from "@/lib/api/AuthContext";
 import { cn } from "@/lib/utils/cn";
 import { categories as appCategories } from "@/lib/mock-data/categories";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";

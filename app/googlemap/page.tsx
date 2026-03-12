@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, MapPin, X, Navigation, RefreshCw, Locate } from "lucide-react";
 import { Task } from "@/lib/types/task";
-import { getOpenJobs } from "@/lib/firebase/jobs";
+import { getOpenJobs } from "@/lib/api/jobs";
 import dynamic from "next/dynamic";
 
 // Dynamically import Leaflet components to avoid SSR issues

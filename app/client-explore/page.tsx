@@ -10,9 +10,9 @@ import {
   bookmarkShowcase,
   unbookmarkShowcase,
   getUserBookmarkedShowcases,
-} from "@/lib/firebase/showcase";
-import { getUserData } from "@/lib/firebase/auth";
-import { useAuth } from "@/lib/firebase/AuthContext";
+} from "@/lib/api/showcase";
+import { getUserData } from "@/lib/api/auth";
+import { useAuth } from "@/lib/api/AuthContext";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { cn } from "@/lib/utils/cn";
 

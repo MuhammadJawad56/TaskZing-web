@@ -3,12 +3,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar, MapPin, Plus, Camera, Video as VideoIcon, X, Clock, ChevronDown, Keyboard, Edit, ChevronLeft, ChevronRight, AlertCircle, Info } from "lucide-react";
-import { useAuth } from "@/lib/firebase/AuthContext";
-import { createJob } from "@/lib/firebase/jobs";
+import { useAuth } from "@/lib/api/AuthContext";
+import { createJob } from "@/lib/api/jobs";
 import { categories } from "@/lib/mock-data/categories";
-import { getUserData } from "@/lib/firebase/auth";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "@/lib/firebase/config";
+import { getUserData } from "@/lib/api/auth";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 export default function PostTaskPage() {
@@ -438,19 +436,20 @@ export default function PostTaskPage() {
     );
   };
 
-  const uploadPhotos = async (files: File[], userId: string): Promise<string[]> => {
-    const uploadPromises = files.map(async (file) => {
-      const storageRef = ref(storage, `jobs/${userId}/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      return await getDownloadURL(storageRef);
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
     });
-    return Promise.all(uploadPromises);
+
+  const uploadPhotos = async (files: File[], _userId: string): Promise<string[]> => {
+    return Promise.all(files.map(fileToDataUrl));
   };
 
-  const uploadVideo = async (file: File, userId: string): Promise<string> => {
-    const storageRef = ref(storage, `jobs/${userId}/videos/${Date.now()}_${file.name}`);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
+  const uploadVideo = async (file: File, _userId: string): Promise<string> => {
+    return fileToDataUrl(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

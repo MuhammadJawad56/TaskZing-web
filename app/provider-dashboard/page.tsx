@@ -3,15 +3,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Bookmark, RefreshCw, Briefcase, Plus, Circle } from "lucide-react";
-import { useAuth } from "@/lib/firebase/AuthContext";
-import { getProposalsByProviderId } from "@/lib/firebase/proposals";
-import { getUserShowcases } from "@/lib/firebase/showcase";
-import { getJobById } from "@/lib/firebase/jobs";
-import { updateDoc, doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
-import { getUserData } from "@/lib/firebase/auth";
+import { useAuth } from "@/lib/api/AuthContext";
+import { getProposalsByProviderId } from "@/lib/api/proposals";
+import { getUserShowcases, type ShowcaseItem } from "@/lib/api/showcase";
+import { getJobById } from "@/lib/api/jobs";
+import { getUserData, updateUserProfile } from "@/lib/api/auth";
 import { ProposalWithDetails } from "@/lib/types/proposal";
-import { ShowcaseItem } from "@/lib/firebase/showcase";
 import { Task } from "@/lib/types/task";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
@@ -190,10 +187,8 @@ export default function ProviderDashboardPage() {
     setIsAvailable(newStatus);
 
     try {
-      // Update in Firestore
-      await updateDoc(doc(db, "users", user.uid), {
+      await updateUserProfile(user.uid, {
         isAvailableForWork: newStatus,
-        updatedAt: new Date(),
       });
       
       // Refresh userData to keep it in sync

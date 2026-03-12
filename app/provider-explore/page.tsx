@@ -5,7 +5,7 @@ import { TaskCard } from "@/components/task/TaskCard";
 import { TaskFilters } from "@/components/task/TaskFilters";
 import { TaskSearch } from "@/components/task/TaskSearch";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { getOpenJobs } from "@/lib/firebase/jobs";
+import { getOpenJobs } from "@/lib/api/jobs";
 import { Task } from "@/lib/types/task";
 
 export default function ProviderExplorePage() {

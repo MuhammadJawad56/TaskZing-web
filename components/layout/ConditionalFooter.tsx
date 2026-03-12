@@ -1,7 +1,7 @@
 "use client";
 
 import { Footer } from "./Footer";
-import { useAuth } from "@/lib/firebase/AuthContext";
+import { useAuth } from "@/lib/api/AuthContext";
 
 export function ConditionalFooter() {
   const { user, loading } = useAuth();

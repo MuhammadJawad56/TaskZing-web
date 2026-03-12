@@ -6,9 +6,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { signIn, signInWithGoogle, signInWithApple, handleAppleRedirect, setAuthCookie } from "@/lib/firebase/auth";
-import { isProfileComplete } from "@/lib/firebase/users";
-import { FirebaseError } from "firebase/app";
+import { signIn, signInWithGoogle, signInWithApple, handleAppleRedirect, setAuthCookie } from "@/lib/api/auth";
+import { isProfileComplete } from "@/lib/api/users";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
 
 export default function LoginPage() {
@@ -39,8 +38,8 @@ export default function LoginPage() {
         }
       }
     }).catch((err) => {
-      if (err instanceof FirebaseError) {
-        setError(getErrorMessage(err.code));
+      if (err instanceof Error) {
+        setError(err.message || t("auth.errorOccurred"));
       }
     });
   }, [router, redirect]);
@@ -94,11 +93,7 @@ export default function LoginPage() {
         router.push(redirect);
       }
     } catch (err) {
-      if (err instanceof FirebaseError) {
-        setError(getErrorMessage(err.code));
-      } else {
-        setError(t("auth.errorOccurred"));
-      }
+      setError(err instanceof Error ? err.message : t("auth.errorOccurred"));
     } finally {
       setIsLoading(false);
     }
@@ -122,13 +117,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error("Google Sign-in Error:", err);
-      if (err instanceof FirebaseError) {
-        // Show more detailed error for debugging
-        const errorMsg = getErrorMessage(err.code);
-        setError(`${errorMsg} (Code: ${err.code})`);
-      } else {
-        setError(`An error occurred: ${err instanceof Error ? err.message : "Unknown error"}`);
-      }
+      setError(`An error occurred: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
       setIsGoogleLoading(false);
     }
@@ -152,10 +141,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error("Apple Sign-in Error:", err);
-      if (err instanceof FirebaseError) {
-        const errorMsg = getErrorMessage(err.code);
-        setError(errorMsg);
-      } else if (err instanceof Error && err.message.includes('Redirecting')) {
+      if (err instanceof Error && err.message.includes('Redirecting')) {
         // This is expected for redirect flow, don't show error
         return;
       } else {

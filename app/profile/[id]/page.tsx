@@ -9,13 +9,17 @@ import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { getUserById } from "@/lib/firebase/users";
-import { getJobsByClientId } from "@/lib/firebase/jobs";
-import { useAuth } from "@/lib/firebase/AuthContext";
+import {
+  bookmarkProfile,
+  getBookmarkedProfiles,
+  getUserById,
+  isProfileBookmarked,
+  unbookmarkProfile,
+} from "@/lib/api/users";
+import { getJobsByClientId } from "@/lib/api/jobs";
+import { useAuth } from "@/lib/api/AuthContext";
 import { useTheme } from "@/lib/contexts/ThemeContext";
-import { getOrCreateChatRoom } from "@/lib/firebase/messages";
-import { collection, query, where, getDocs, addDoc, deleteDoc, Timestamp, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+import { getOrCreateChatRoom } from "@/lib/api/messages";
 import { Task } from "@/lib/types/task";
 import { User } from "@/lib/types/user";
 
@@ -103,13 +107,7 @@ export default function ProfilePage() {
     if (!currentUser || !userId) return;
 
     try {
-      const q = query(
-        collection(db, "profileBookmarks"),
-        where("bookmarkedBy", "==", currentUser.uid),
-        where("profileUserId", "==", userId)
-      );
-      const snapshot = await getDocs(q);
-      setIsBookmarked(!snapshot.empty);
+      setIsBookmarked(await isProfileBookmarked(currentUser.uid, userId));
     } catch (error) {
       console.error("Error checking bookmark status:", error);
     }
@@ -139,29 +137,14 @@ export default function ProfilePage() {
     setIsBookmarking(true);
     try {
       if (isBookmarked) {
-        // Remove bookmark
-        const q = query(
-          collection(db, "profileBookmarks"),
-          where("bookmarkedBy", "==", currentUser.uid),
-          where("profileUserId", "==", userId)
-        );
-        const snapshot = await getDocs(q);
-        const deletePromises = snapshot.docs.map((doc) => deleteDoc(doc.ref));
-        await Promise.all(deletePromises);
+        await unbookmarkProfile(currentUser.uid, userId);
         setIsBookmarked(false);
-        // Reload bookmarked profiles if viewing own profile and saved tab is active
         if (isOwnProfile && activeTab === "saved") {
           loadBookmarkedProfiles();
         }
       } else {
-        // Add bookmark
-        await addDoc(collection(db, "profileBookmarks"), {
-          bookmarkedBy: currentUser.uid,
-          profileUserId: userId,
-          createdAt: Timestamp.now(),
-        });
+        await bookmarkProfile(currentUser.uid, userId);
         setIsBookmarked(true);
-        // Reload bookmarked profiles if viewing own profile and saved tab is active
         if (isOwnProfile && activeTab === "saved") {
           loadBookmarkedProfiles();
         }
@@ -179,35 +162,7 @@ export default function ProfilePage() {
 
     setLoadingBookmarks(true);
     try {
-      // First, get all bookmarks without ordering to avoid index issues
-      const q = query(
-        collection(db, "profileBookmarks"),
-        where("bookmarkedBy", "==", currentUser.uid)
-      );
-      const snapshot = await getDocs(q);
-      const bookmarks = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          profileUserId: data.profileUserId as string,
-          createdAt: data.createdAt as Timestamp | undefined,
-        };
-      });
-      
-      // Sort by createdAt if available, otherwise by document ID
-      bookmarks.sort((a, b) => {
-        if (a.createdAt && b.createdAt) {
-          return b.createdAt.toMillis() - a.createdAt.toMillis();
-        }
-        return b.id.localeCompare(a.id);
-      });
-      
-      const profileIds = bookmarks.map((bookmark) => bookmark.profileUserId).filter(Boolean);
-
-      // Fetch user data for each bookmarked profile
-      const profilePromises = profileIds.map((id) => getUserById(id));
-      const profiles = await Promise.all(profilePromises);
-      setBookmarkedProfiles(profiles.filter((p) => p !== null) as User[]);
+      setBookmarkedProfiles(await getBookmarkedProfiles(currentUser.uid));
     } catch (error) {
       console.error("Error loading bookmarked profiles:", error);
       setBookmarkedProfiles([]);

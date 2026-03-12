@@ -4,8 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MapPin, Plus, X } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useAuth } from "@/lib/firebase/AuthContext";
-import { getUserById } from "@/lib/firebase/users";
+import { useAuth } from "@/lib/api/AuthContext";
+import { getUserById } from "@/lib/api/users";
 
 export default function EditProfilePage() {
   const router = useRouter();

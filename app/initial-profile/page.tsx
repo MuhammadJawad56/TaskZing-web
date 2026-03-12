@@ -5,13 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, MapPin, X, Plus, CreditCard } from "lucide-react";
-import { useAuth } from "@/lib/firebase/AuthContext";
+import { useAuth } from "@/lib/api/AuthContext";
 import { useTheme } from "@/lib/contexts/ThemeContext";
-import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+import { getUserData, updateUserProfile, type UserData } from "@/lib/api/auth";
+import { addStoredPaymentMethod, getStoredPaymentMethods } from "@/lib/api/payments";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { collection, query, where, getDocs, addDoc, Timestamp } from "firebase/firestore";
 
 // Initialize Stripe only if key is available
 const getStripePromise = () => {
@@ -105,18 +104,17 @@ function PaymentCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
         return;
       }
 
-      // Save payment method to Firestore
       const paymentMethodData = {
-        userId: user.uid,
+        id: paymentMethod.id,
         paymentMethodId: paymentMethod.id,
         cardBrand: paymentMethod.card?.brand || "unknown",
         last4: paymentMethod.card?.last4 || "",
         expMonth: paymentMethod.card?.exp_month || 0,
         expYear: paymentMethod.card?.exp_year || 0,
-        createdAt: Timestamp.now(),
+        createdAt: new Date().toISOString(),
+        cardholderName,
       };
-
-      await addDoc(collection(db, "paymentMethods"), paymentMethodData);
+      addStoredPaymentMethod(user.uid, paymentMethodData);
       onSuccess();
     } catch (err: any) {
       console.error("Error saving payment method:", err);
@@ -223,10 +221,10 @@ export default function InitialProfilePage() {
   // Check if user signed up with Google/Apple
   useEffect(() => {
     if (user) {
-      // Check provider data to determine if username should be read-only
-      const providers = user.providerData || [];
-      const isSocialSignIn = providers.some(
-        (provider) => provider.providerId === "google.com" || provider.providerId === "apple.com"
+      const isSocialSignIn = Boolean(
+        userData?.email &&
+          userData.email === user.email &&
+          (userData.role === "client" || userData.role === "client+provider")
       );
 
       if (isSocialSignIn) {
@@ -249,10 +247,11 @@ export default function InitialProfilePage() {
     if (!user) return;
 
     try {
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        if (data.username) setUsername(data.username);
+      const data = await getUserData(user.uid);
+      if (data) {
+        if ((data as UserData & { username?: string }).username) {
+          setUsername((data as UserData & { username?: string }).username || "");
+        }
         if (data.location) setLocation(data.location);
         if (data.bio || data.about) setAboutYou(data.bio || data.about || "");
         if (data.skills && Array.isArray(data.skills)) setSkills(data.skills);
@@ -270,10 +269,7 @@ export default function InitialProfilePage() {
 
     try {
       setIsCheckingPayment(true);
-      const paymentMethodsRef = collection(db, "paymentMethods");
-      const q = query(paymentMethodsRef, where("userId", "==", user.uid));
-      const snapshot = await getDocs(q);
-      setHasPaymentMethod(!snapshot.empty);
+      setHasPaymentMethod(getStoredPaymentMethods(user.uid).length > 0);
     } catch (err) {
       console.error("Error checking payment methods:", err);
     } finally {
@@ -372,10 +368,10 @@ export default function InitialProfilePage() {
     setIsLoading(true);
 
     try {
-      const userRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userRef);
-
-      const updateData: any = {
+      const updateData: Partial<UserData> & {
+        username: string;
+        profileCompleted: boolean;
+      } = {
         username: username.trim(),
         location: location.trim(),
         bio: aboutYou.trim(),
@@ -386,20 +382,10 @@ export default function InitialProfilePage() {
         // Set to "client" for client-only so they see client home
         currentRole: signUpAs === "client+provider" ? "provider" : "client",
         profileCompleted: true,
-        updatedAt: new Date(),
+        providerProfileCompleted: signUpAs === "client+provider",
+        fullName: user.displayName || username,
       };
-
-      if (userDoc.exists()) {
-        await updateDoc(userRef, updateData);
-      } else {
-        await setDoc(userRef, {
-          uid: user.uid,
-          email: user.email,
-          fullName: user.displayName || username,
-          ...updateData,
-          createdAt: new Date(),
-        });
-      }
+      await updateUserProfile(user.uid, updateData);
 
       // Redirect based on role
       if (signUpAs === "client+provider") {

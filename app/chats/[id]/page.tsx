@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useAuth } from "@/lib/firebase/AuthContext";
+import { useAuth } from "@/lib/api/AuthContext";
 import { ChatRoomWithParticipants, MessageWithSender } from "@/lib/types/message";
 import {
   getChatRoomsByUserId,
@@ -15,7 +15,7 @@ import {
   deleteMessageForMe,
   deleteMessageForEveryone,
   markMessagesAsRead,
-} from "@/lib/firebase/messages";
+} from "@/lib/api/messages";
 import { Send, ArrowLeft, AlertCircle, MessageSquare, MoreVertical, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";

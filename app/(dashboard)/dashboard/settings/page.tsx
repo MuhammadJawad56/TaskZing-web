@@ -16,7 +16,7 @@ import {
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Toggle } from "@/components/ui/Toggle";
-import { useAuth } from "@/lib/firebase/AuthContext";
+import { useAuth } from "@/lib/api/AuthContext";
 import { useTheme } from "@/lib/contexts/ThemeContext";
 import { useLanguage } from "@/lib/contexts/LanguageContext";
 

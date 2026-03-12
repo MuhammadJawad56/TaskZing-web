@@ -5,8 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { resetPassword } from "@/lib/firebase/auth";
-import { FirebaseError } from "firebase/app";
+import { resetPassword } from "@/lib/api/auth";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -23,13 +22,8 @@ export default function ForgotPasswordPage() {
       await resetPassword(email);
       setIsSubmitted(true);
     } catch (err) {
-      if (err instanceof FirebaseError) {
-        if (err.code === "auth/user-not-found") {
-          // Still show success to prevent email enumeration
-          setIsSubmitted(true);
-        } else {
-          setError("An error occurred. Please try again.");
-        }
+      if (err instanceof Error && err.message.includes("user-not-found")) {
+        setIsSubmitted(true);
       } else {
         setError("An error occurred. Please try again.");
       }

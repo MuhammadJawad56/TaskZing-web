@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAuth } from "@/lib/firebase/AuthContext";
+import { useAuth } from "@/lib/api/AuthContext";
 import { Task } from "@/lib/types/task";
 import { cn } from "@/lib/utils/cn";
 import { RefreshCw, ClipboardList, MapPin, Calendar, Clock } from "lucide-react";
 import Link from "next/link";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+import { getJobsByContractorId } from "@/lib/api/jobs";
 
 type TabType = "all" | "completed" | "in_progress";
 
@@ -31,28 +30,7 @@ export default function MyTasksPage() {
 
     try {
       setIsLoading(true);
-      
-      // Query tasks where the user is the contractor (assigned tasks)
-      const tasksRef = collection(db, "jobs");
-      const q = query(
-        tasksRef,
-        where("contractorId", "==", user.uid)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const userTasks: Task[] = querySnapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          jobId: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt || new Date().toISOString(),
-          updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt || new Date().toISOString(),
-        } as Task;
-      });
-
-      // Sort by createdAt descending
-      userTasks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
+      const userTasks = await getJobsByContractorId(user.uid);
       setTasks(userTasks);
     } catch (error) {
       console.error("Error loading tasks:", error);

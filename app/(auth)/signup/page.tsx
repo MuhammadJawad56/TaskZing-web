@@ -5,15 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
-import { signUp, signInWithGoogle, signInWithApple, handleAppleRedirect, getUserData } from "@/lib/firebase/auth";
-import { isProfileComplete } from "@/lib/firebase/users";
-import { FirebaseError } from "firebase/app";
+import { signUp, signInWithGoogle, signInWithApple, handleAppleRedirect, getUserData } from "@/lib/api/auth";
+import { isProfileComplete } from "@/lib/api/users";
 import { Eye, EyeOff, CreditCard, X } from "lucide-react";
 import { useTheme } from "@/lib/contexts/ThemeContext";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase/config";
+// Firebase has been unlinked; remove Firestore usage from signup
 
 // Initialize Stripe
 const getStripePromise = () => {
@@ -131,27 +129,6 @@ function PaymentCardForm({
         setCardError(chargeData.error || "Failed to process payment");
         setIsProcessing(false);
         return;
-      }
-
-      // Save payment method to Firestore if userId is provided
-      if (userId) {
-        try {
-          const paymentMethodData = {
-            userId: userId,
-            paymentMethodId: paymentMethod.id,
-            cardBrand: paymentMethod.card?.brand || "unknown",
-            last4: paymentMethod.card?.last4 || "",
-            expMonth: paymentMethod.card?.exp_month || 0,
-            expYear: paymentMethod.card?.exp_year || 0,
-            createdAt: Timestamp.now(),
-            verificationChargeId: chargeData.paymentIntentId,
-          };
-
-          await addDoc(collection(db, "paymentMethods"), paymentMethodData);
-        } catch (err) {
-          console.error("Error saving payment method:", err);
-          // Don't fail the flow if saving to Firestore fails
-        }
       }
 
       onSuccess();
@@ -286,8 +263,8 @@ export default function SignupPage() {
         }
       }
     }).catch((err) => {
-      if (err instanceof FirebaseError) {
-        setError(getErrorMessage(err.code));
+      if (err instanceof Error) {
+        setError(err.message || "An error occurred. Please try again.");
       }
     });
   }, [router]);
@@ -340,11 +317,7 @@ export default function SignupPage() {
         }
       }
     } catch (err) {
-      if (err instanceof FirebaseError) {
-        setError(getErrorMessage(err.code));
-      } else {
-        setError("An error occurred. Please try again.");
-      }
+      setError(err instanceof Error ? err.message : "An error occurred. Please try again.");
     } finally {
       setIsGoogleLoading(false);
     }
@@ -376,10 +349,7 @@ export default function SignupPage() {
       }
     } catch (err) {
       console.error("Apple Sign-in Error:", err);
-      if (err instanceof FirebaseError) {
-        const errorMsg = getErrorMessage(err.code);
-        setError(errorMsg);
-      } else if (err instanceof Error && err.message.includes('Redirecting')) {
+      if (err instanceof Error && err.message.includes("Redirecting")) {
         // This is expected for redirect flow, don't show error
         return;
       } else {
@@ -435,11 +405,7 @@ export default function SignupPage() {
       // Redirect to email confirmation page with email parameter
       router.push(`/email-confirmation?email=${encodeURIComponent(email)}&role=${encodeURIComponent(role)}`);
     } catch (err) {
-      if (err instanceof FirebaseError) {
-        setError(getErrorMessage(err.code));
-      } else {
-        setError("An error occurred. Please try again.");
-      }
+      setError(err instanceof Error ? err.message : "An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
