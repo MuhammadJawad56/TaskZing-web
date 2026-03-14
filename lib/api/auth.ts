@@ -404,3 +404,73 @@ export async function switchUserRole(
     currentRole: newRole,
   });
 }
+
+/**
+ * Get active sessions
+ */
+export async function getSessions(): Promise<Array<{
+  id: string;
+  deviceName?: string;
+  userAgent?: string;
+  createdAt?: string;
+  lastUsedAt?: string;
+}>> {
+  const response = await apiClient.getSessions();
+
+  if (response.error || !response.data) {
+    return [];
+  }
+
+  return Array.isArray(response.data) ? response.data : [];
+}
+
+/**
+ * Revoke a specific session
+ */
+export async function revokeSession(sessionId: string): Promise<void> {
+  const response = await apiClient.revokeSession(sessionId);
+
+  if (response.error) {
+    throw new AuthError(response.error || "Failed to revoke session", "revoke-session-failed");
+  }
+}
+
+/**
+ * Revoke all other sessions (keep current)
+ */
+export async function revokeAllOtherSessions(): Promise<void> {
+  const response = await apiClient.revokeAllOtherSessions();
+
+  if (response.error) {
+    throw new AuthError(response.error || "Failed to revoke sessions", "revoke-sessions-failed");
+  }
+}
+
+/**
+ * Accept terms
+ */
+export async function acceptTerms(): Promise<UserData> {
+  const response = await apiClient.acceptTerms();
+
+  if (response.error || !response.data) {
+    throw new AuthError(response.error || "Failed to accept terms", "accept-terms-failed");
+  }
+
+  return response.data;
+}
+
+/**
+ * Update onboarding step
+ */
+export async function updateOnboarding(data: {
+  step?: number;
+  completed?: boolean;
+}): Promise<UserData> {
+  const response = await apiClient.updateOnboarding(data);
+
+  if (response.error || !response.data) {
+    throw new AuthError(response.error || "Failed to update onboarding", "update-onboarding-failed");
+  }
+
+  return response.data;
+}

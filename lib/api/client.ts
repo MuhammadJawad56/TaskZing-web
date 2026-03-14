@@ -442,6 +442,88 @@ class ApiClient {
       }),
     });
   }
+
+  /**
+   * Auth: List active sessions
+   */
+  async getSessions(): Promise<ApiResponse<Array<{
+    id: string;
+    deviceName?: string;
+    userAgent?: string;
+    createdAt?: string;
+    lastUsedAt?: string;
+  }>>> {
+    return this.request("/auth/sessions");
+  }
+
+  /**
+   * Auth: Revoke a specific session
+   */
+  async revokeSession(sessionId: string): Promise<ApiResponse> {
+    return this.request(`/auth/sessions/${sessionId}`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Auth: Revoke all other sessions (keep current)
+   */
+  async revokeAllOtherSessions(): Promise<ApiResponse> {
+    return this.request("/auth/sessions", {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Auth: Accept terms
+   */
+  async acceptTerms(): Promise<ApiResponse<UserData>> {
+    const response = await this.request<any>("/auth/accept-terms", {
+      method: "POST",
+    });
+
+    if (response.error || !response.data) {
+      return { error: response.error || "Failed to accept terms" };
+    }
+
+    const normalizedUser = this.normalizeUserData(response.data);
+    if (!normalizedUser) {
+      return { error: "Unable to normalize user data after accepting terms" };
+    }
+
+    return { data: normalizedUser };
+  }
+
+  /**
+   * User: Update onboarding step
+   */
+  async updateOnboarding(data: {
+    step?: number;
+    completed?: boolean;
+  }): Promise<ApiResponse<UserData>> {
+    const response = await this.request<any>("/users/me/onboarding", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+
+    if (response.error || !response.data) {
+      return { error: response.error || "Failed to update onboarding" };
+    }
+
+    const normalizedUser = this.normalizeUserData(response.data);
+    if (!normalizedUser) {
+      return { error: "Unable to normalize user data after updating onboarding" };
+    }
+
+    return { data: normalizedUser };
+  }
+
+  /**
+   * Jobs: Get all jobs
+   */
+  async getJobs(): Promise<ApiResponse<Array<any>>> {
+    return this.request("/jobs");
+  }
 }
 
 // Export singleton instance

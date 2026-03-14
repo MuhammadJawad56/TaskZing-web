@@ -1,5 +1,6 @@
 import { tasks as mockTasks } from "@/lib/mock-data/tasks";
 import { Task } from "@/lib/types/task";
+import { apiClient } from "./client";
 
 const LOCAL_JOBS_STORAGE_KEY = "taskzing_local_jobs";
 
@@ -22,7 +23,67 @@ function writeLocalJobs(jobs: Task[]) {
   localStorage.setItem(LOCAL_JOBS_STORAGE_KEY, JSON.stringify(jobs));
 }
 
-function getAllJobData(): Task[] {
+async function getAllJobData(): Promise<Task[]> {
+  // Try to fetch from backend first
+  try {
+    const response = await apiClient.getJobs();
+    if (!response.error && response.data && Array.isArray(response.data)) {
+      // Transform backend jobs to Task format if needed
+      const backendJobs = response.data.map((job: any) => ({
+        jobId: job.id || job.jobId || `job-${Date.now()}-${Math.random()}`,
+        title: job.title || "Untitled Job",
+        description: job.description || "",
+        category: job.category || "Other",
+        subCategory: job.subCategory,
+        itemType: job.itemType,
+        fixedPrice: job.fixedPrice,
+        estimatedDuration: job.estimatedDuration,
+        hourlyRate: job.hourlyRate,
+        timeFlexibility: job.timeFlexibility,
+        jobStartTime: job.jobStartTime,
+        jobEndTime: job.jobEndTime,
+        price: job.price || job.fixedPrice || 0,
+        lat: job.lat || job.latitude || 0,
+        lng: job.lng || job.longitude || 0,
+        address: job.address || job.location || "",
+        additionalLocationNotes: job.additionalLocationNotes,
+        jobDate: job.jobDate,
+        storePickup: job.storePickup,
+        storeName: job.storeName,
+        pickupAddress: job.pickupAddress,
+        deliveryAddress: job.deliveryAddress,
+        completionStatus: job.completionStatus || job.status || "open",
+        proposalAcceptance: job.proposalAcceptance || "open",
+        clientId: job.clientId || job.userId || "",
+        contractorId: job.contractorId,
+        acceptedAt: job.acceptedAt,
+        completedAt: job.completedAt,
+        maxHoursAllowed: job.maxHoursAllowed,
+        urgency: job.urgency || "normal",
+        isVerified: job.isVerified ?? false,
+        posterType: job.posterType || "individual",
+        posterName: job.posterName,
+        photos: job.photos || [],
+        attachments: job.attachments || [],
+        skills: job.skills || [],
+        tags: job.tags || [],
+        createdAt: job.createdAt || new Date().toISOString(),
+        updatedAt: job.updatedAt || new Date().toISOString(),
+        jobType: (job.jobType || "fixed") as Task["jobType"],
+      })) as Task[];
+
+      // Merge with local jobs (local jobs take precedence for conflicts)
+      const localJobs = readLocalJobs();
+      const localJobIds = new Set(localJobs.map(j => j.jobId));
+      const uniqueBackendJobs = backendJobs.filter(j => !localJobIds.has(j.jobId));
+      
+      return [...localJobs, ...uniqueBackendJobs];
+    }
+  } catch (error) {
+    console.warn("Failed to fetch jobs from backend, using local/mock data:", error);
+  }
+
+  // Fallback to local/mock data
   const localJobs = readLocalJobs();
   return [...localJobs, ...mockTasks];
 }
@@ -103,19 +164,22 @@ export async function createJob(
 }
 
 export async function getJobsByClientId(clientId: string): Promise<Task[]> {
-  return getAllJobData()
+  const allJobs = await getAllJobData();
+  return allJobs
     .filter((job) => job.clientId === clientId)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 export async function getJobsByContractorId(contractorId: string): Promise<Task[]> {
-  return getAllJobData()
+  const allJobs = await getAllJobData();
+  return allJobs
     .filter((job) => job.contractorId === contractorId)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 export async function getJobById(jobId: string): Promise<Task | null> {
-  return getAllJobData().find((job) => job.jobId === jobId) || null;
+  const allJobs = await getAllJobData();
+  return allJobs.find((job) => job.jobId === jobId) || null;
 }
 
 export async function deleteJob(jobId: string, clientId: string): Promise<void> {
@@ -127,7 +191,8 @@ export async function deleteJob(jobId: string, clientId: string): Promise<void> 
 }
 
 export async function getOpenJobs(): Promise<Task[]> {
-  return getAllJobData().filter((job) => job.completionStatus === "open");
+  const allJobs = await getAllJobData();
+  return allJobs.filter((job) => job.completionStatus === "open");
 }
 
 export async function searchJobs(query: string): Promise<Task[]> {
