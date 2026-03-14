@@ -12,22 +12,32 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 // Firebase has been unlinked; remove Firestore usage from signup
 
-// Initialize Stripe
-const getStripePromise = () => {
+// Initialize Stripe lazily
+let stripePromise: Promise<any> | null = null;
+
+const getStripePromise = (): Promise<any> | null => {
   if (typeof window === "undefined") return null;
+  
+  // Return cached promise if already initialized
+  if (stripePromise !== null) return stripePromise;
+  
   const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
   if (!stripeKey || stripeKey === "pk_test_your_publishable_key_here" || !stripeKey.startsWith("pk_")) {
     return null;
   }
+  
   try {
-    return loadStripe(stripeKey);
+    stripePromise = loadStripe(stripeKey).catch((error) => {
+      console.warn("Stripe.js failed to load. Payment features will be unavailable:", error);
+      stripePromise = null; // Reset on error so we can retry
+      return null;
+    });
+    return stripePromise;
   } catch (error) {
-    console.error("Failed to load Stripe:", error);
+    console.warn("Failed to initialize Stripe:", error);
     return null;
   }
 };
-
-const stripePromise = getStripePromise();
 
 const cardElementOptions = {
   style: {
@@ -238,6 +248,15 @@ export default function SignupPage() {
   );
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [hasPaymentMethod, setHasPaymentMethod] = useState(false);
+  const [currentStripePromise, setCurrentStripePromise] = useState<Promise<any> | null>(null);
+
+  // Initialize Stripe promise when component mounts
+  useEffect(() => {
+    const promise = getStripePromise();
+    if (promise) {
+      setCurrentStripePromise(promise);
+    }
+  }, []);
 
   // Handle Apple redirect result on page load
   useEffect(() => {
@@ -385,7 +404,7 @@ export default function SignupPage() {
 
     // Check payment method requirement for Client + Provider
     if (signUpAs === "client+provider") {
-      if (!stripePromise) {
+      if (!currentStripePromise) {
         setError("Payment processing is not available. Please try again later.");
         return;
       }
@@ -613,8 +632,8 @@ export default function SignupPage() {
       </div>
 
       {/* Payment Form Modal */}
-      {showPaymentForm && stripePromise ? (
-        <Elements stripe={stripePromise}>
+      {showPaymentForm && currentStripePromise ? (
+        <Elements stripe={currentStripePromise}>
           <PaymentCardForm
             onSuccess={() => {
               setShowPaymentForm(false);
@@ -623,7 +642,7 @@ export default function SignupPage() {
             onCancel={() => setShowPaymentForm(false)}
           />
         </Elements>
-      ) : showPaymentForm && !stripePromise ? (
+      ) : showPaymentForm && !currentStripePromise ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
