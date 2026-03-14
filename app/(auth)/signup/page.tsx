@@ -512,26 +512,6 @@ export default function SignupPage() {
               </button>
             </div>
 
-            {/* Sign Up As */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Sign Up as</label>
-              <select
-                value={signUpAs}
-                onChange={(e) => {
-                  setSignUpAs(e.target.value as "client" | "client+provider");
-                  setHasPaymentMethod(false); // Reset payment method when role changes
-                }}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-900 appearance-none cursor-pointer bg-white"
-              >
-                <option value="client">Client</option>
-                <option value="client+provider">Client + Provider</option>
-              </select>
-              {signUpAs === "client+provider" && (
-                <p className="mt-1 text-xs text-red-600">Will also enable future payments.</p>
-              )}
-            </div>
-
             {/* Payment Card Section (for Client + Provider) */}
             {signUpAs === "client+provider" && (
               <div>

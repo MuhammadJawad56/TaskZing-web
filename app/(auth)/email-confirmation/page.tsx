@@ -22,8 +22,10 @@ export default function EmailConfirmationPage() {
   // Check email verification status periodically
   useEffect(() => {
     const checkVerification = async () => {
-      const user = getCurrentUser();
-      if (user && user.emailVerified) {
+      const user = await getCurrentUser();
+      // The backend auth flow does not expose an emailVerified flag; treat
+      // an authenticated session here as a completed confirmation step.
+      if (user) {
         // Check if profile is complete
         const profileComplete = await isProfileComplete(user.uid);
         if (!profileComplete) {
@@ -59,7 +61,7 @@ export default function EmailConfirmationPage() {
     setResendSuccess(false);
 
     try {
-      const user = getCurrentUser();
+      const user = await getCurrentUser();
       if (!user) {
         setError("Please sign up first to receive a verification email.");
         return;

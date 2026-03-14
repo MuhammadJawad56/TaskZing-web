@@ -9,8 +9,6 @@ import { apiClient, UserData, AuthResponse } from "./client";
 export type { UserData } from "./client";
 
 const TEST_USER_STORAGE_KEY = "taskzing_test_user";
-const TEMP_LOGIN_EMAIL = "jawadkamil307@gmail.com";
-const TEMP_LOGIN_PASSWORD = "112233";
 
 export class AuthError extends Error {
   code: string;
@@ -122,26 +120,6 @@ export async function signIn(
   email: string,
   password: string
 ): Promise<{ user: AuthUser; userData: UserData }> {
-  if (
-    email.trim().toLowerCase() === TEMP_LOGIN_EMAIL &&
-    password === TEMP_LOGIN_PASSWORD
-  ) {
-    const userData = setTestSession({
-      id: "jawad-temp-user",
-      uid: "jawad-temp-user",
-      email: TEMP_LOGIN_EMAIL,
-      fullName: "Jawad Kamil",
-      name: "Jawad Kamil",
-      role: "client",
-      currentRole: "client",
-      profileCompleted: true,
-      providerProfileCompleted: false,
-      isVerified: true,
-    });
-
-    return { user: convertToAuthUser(userData), userData };
-  }
-
   const response = await apiClient.signIn(email, password);
 
   if (response.error || !response.data) {
@@ -358,14 +336,25 @@ export async function handleAppleRedirect(): Promise<{
 export async function isProfileComplete(userId: string): Promise<boolean> {
   const userData = await getUserData(userId);
   if (!userData) return false;
-  
-  // Check if provider profile is completed
-  if (userData.role === "provider" || userData.role === "client+provider") {
-    return userData.providerProfileCompleted === true;
+
+  const hasBasicProfile = !!(
+    userData.email &&
+    (userData.fullName || userData.name) &&
+    userData.username &&
+    userData.location
+  );
+
+  const isProviderRole =
+    userData.role === "provider" ||
+    userData.role === "client+provider" ||
+    userData.role === "both" ||
+    userData.currentRole === "provider";
+
+  if (isProviderRole) {
+    return hasBasicProfile && !!(userData.description || userData.bio || userData.about);
   }
-  
-  // For client-only users, profile is considered complete if they have basic info
-  return !!(userData.email && userData.fullName);
+
+  return hasBasicProfile;
 }
 
 export async function updateUserProfile(

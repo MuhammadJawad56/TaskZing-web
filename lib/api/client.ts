@@ -13,6 +13,7 @@ export interface ApiResponse<T = any> {
 
 export interface AuthResponse {
   token: string;
+  accessToken?: string;
   user: UserData;
   refreshToken?: string;
 }
@@ -30,6 +31,11 @@ export interface UserData {
   providerProfileCompleted?: boolean;
   isAvailableForWork?: boolean;
   location?: string;
+  phoneNumber?: string;
+  latitude?: number;
+  longitude?: number;
+  description?: string;
+  photos?: string[];
   totalRating?: number;
   totalReviews?: number;
   skills?: string[];
@@ -71,6 +77,115 @@ class ApiClient {
   private removeToken(): void {
     if (typeof window === "undefined") return;
     localStorage.removeItem("auth_token");
+  }
+
+  private normalizeRoleValue(
+    value: unknown
+  ): "client" | "provider" | "both" | "client+provider" | undefined {
+    if (typeof value !== "string") return undefined;
+
+    const normalized = value.trim().toLowerCase().replace(/\s+/g, "");
+
+    if (normalized === "client" || normalized === "provider" || normalized === "both") {
+      return normalized;
+    }
+
+    if (normalized === "client+provider" || normalized === "clientprovider") {
+      return "client+provider";
+    }
+
+    return undefined;
+  }
+
+  private normalizeUserData(raw: any): UserData | null {
+    if (!raw || typeof raw !== "object") return null;
+
+    const user = raw.user && typeof raw.user === "object" ? raw.user : raw;
+    const id = user.id || user.uid || user.userId;
+
+    if (!id || !user.email) {
+      return null;
+    }
+
+    return {
+      ...user,
+      id,
+      uid: user.uid || id,
+      fullName: user.fullName || user.name,
+      name: user.name || user.fullName,
+      role: this.normalizeRoleValue(user.role),
+      currentRole: this.normalizeRoleValue(user.currentRole) as
+        | "client"
+        | "provider"
+        | "both"
+        | undefined,
+      description: user.description || user.bio || user.about,
+      bio: user.bio || user.about || user.description,
+      about: user.about || user.bio || user.description,
+      photoUrl: user.photoUrl || user.profilePicture,
+      profilePicture: user.profilePicture || user.photoUrl,
+    } as UserData;
+  }
+
+  private sanitizeUserUpdatePayload(data: Partial<UserData>): Record<string, unknown> {
+    const payload: Record<string, unknown> = {};
+
+    const assignIfDefined = (key: string, value: unknown) => {
+      if (value !== undefined) {
+        payload[key] = value;
+      }
+    };
+
+    assignIfDefined("fullName", data.fullName || data.name);
+    assignIfDefined("username", data.username);
+    assignIfDefined("photoUrl", data.photoUrl || data.profilePicture);
+    assignIfDefined("phoneNumber", data.phoneNumber);
+    assignIfDefined("location", data.location);
+    assignIfDefined("latitude", data.latitude);
+    assignIfDefined("longitude", data.longitude);
+    assignIfDefined("description", data.description || data.bio || data.about);
+    assignIfDefined("photos", data.photos);
+    assignIfDefined("role", data.role);
+    assignIfDefined("currentRole", data.currentRole);
+    assignIfDefined("isAvailableForWork", data.isAvailableForWork);
+
+    return payload;
+  }
+
+  private async normalizeAuthResponse(raw: any): Promise<ApiResponse<AuthResponse>> {
+    const accessToken =
+      raw?.accessToken || raw?.token || raw?.data?.accessToken || raw?.data?.token;
+    const refreshToken = raw?.refreshToken || raw?.data?.refreshToken;
+
+    if (!accessToken) {
+      return { error: "Authentication token missing from response" };
+    }
+
+    this.setToken(accessToken);
+
+    let user =
+      this.normalizeUserData(raw?.user) ||
+      this.normalizeUserData(raw?.data?.user) ||
+      this.normalizeUserData(raw);
+
+    if (!user) {
+      const currentUserResponse = await this.getCurrentUser();
+      if (currentUserResponse.error || !currentUserResponse.data) {
+        return {
+          error: currentUserResponse.error || "Authenticated user data missing from response",
+        };
+      }
+      user = currentUserResponse.data;
+    }
+
+    return {
+      data: {
+        token: accessToken,
+        accessToken,
+        refreshToken,
+        user,
+      },
+    };
   }
 
   /**
@@ -126,38 +241,47 @@ class ApiClient {
     fullName: string,
     role: "client" | "provider" | "client+provider" = "client"
   ): Promise<ApiResponse<AuthResponse>> {
-    const response = await this.request<AuthResponse>("/auth/signup", {
+    const response = await this.request<any>("/auth/register", {
       method: "POST",
       body: JSON.stringify({
         email,
         password,
-        fullName,
-        name: fullName,
-        role,
       }),
     });
 
-    if (response.data?.token) {
-      this.setToken(response.data.token);
+    if (response.error || !response.data) {
+      return { error: response.error || "Sign up failed" };
     }
 
-    return response;
+    const normalized = await this.normalizeAuthResponse(response.data);
+
+    if (!normalized.error && normalized.data?.user) {
+      normalized.data.user = {
+        ...normalized.data.user,
+        fullName: normalized.data.user.fullName || fullName,
+        name: normalized.data.user.name || fullName,
+        role: normalized.data.user.role || role,
+        currentRole: normalized.data.user.currentRole || (role === "provider" ? "provider" : "client"),
+      };
+    }
+
+    return normalized;
   }
 
   /**
    * Auth: Sign in
    */
   async signIn(email: string, password: string): Promise<ApiResponse<AuthResponse>> {
-    const response = await this.request<AuthResponse>("/auth/login", {
+    const response = await this.request<any>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
 
-    if (response.data?.token) {
-      this.setToken(response.data.token);
+    if (response.error || !response.data) {
+      return { error: response.error || "Sign in failed" };
     }
 
-    return response;
+    return this.normalizeAuthResponse(response.data);
   }
 
   /**
@@ -208,7 +332,26 @@ class ApiClient {
    * Auth: Get current user
    */
   async getCurrentUser(): Promise<ApiResponse<UserData>> {
-    return this.request<UserData>("/auth/me");
+    const meResponse = await this.request<any>("/users/me");
+
+    if (!meResponse.error && meResponse.data) {
+      const normalizedUser = this.normalizeUserData(meResponse.data);
+      if (normalizedUser) {
+        return { data: normalizedUser };
+      }
+    }
+
+    const authMeResponse = await this.request<any>("/auth/me");
+    if (authMeResponse.error || !authMeResponse.data) {
+      return { error: authMeResponse.error || meResponse.error || "Unable to fetch current user" };
+    }
+
+    const normalizedUser = this.normalizeUserData(authMeResponse.data);
+    if (!normalizedUser) {
+      return { error: "Unable to normalize current user" };
+    }
+
+    return { data: normalizedUser };
   }
 
   /**
@@ -230,17 +373,48 @@ class ApiClient {
    * User: Get user data by ID
    */
   async getUserData(userId: string): Promise<ApiResponse<UserData>> {
-    return this.request<UserData>(`/users/${userId}`);
+    const currentUserResponse = await this.getCurrentUser();
+    if (
+      !currentUserResponse.error &&
+      currentUserResponse.data &&
+      (currentUserResponse.data.id === userId || currentUserResponse.data.uid === userId)
+    ) {
+      return currentUserResponse;
+    }
+
+    const response = await this.request<any>(`/users/${userId}`);
+    if (response.error || !response.data) {
+      return { error: response.error || "Unable to fetch user" };
+    }
+
+    const normalizedUser = this.normalizeUserData(response.data);
+    if (!normalizedUser) {
+      return { error: "Unable to normalize user data" };
+    }
+
+    return { data: normalizedUser };
   }
 
   /**
    * User: Update user profile
    */
   async updateUser(userId: string, data: Partial<UserData>): Promise<ApiResponse<UserData>> {
-    return this.request<UserData>(`/users/${userId}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
+    const sanitizedData = this.sanitizeUserUpdatePayload(data);
+    const response = await this.request<any>("/users/me", {
+      method: "PATCH",
+      body: JSON.stringify(sanitizedData),
     });
+
+    if (response.error || !response.data) {
+      return { error: response.error || "Failed to update profile" };
+    }
+
+    const normalizedUser = this.normalizeUserData(response.data);
+    if (!normalizedUser) {
+      return { error: "Unable to normalize updated user data" };
+    }
+
+    return { data: normalizedUser };
   }
 
   /**
