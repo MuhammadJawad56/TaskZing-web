@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { signUp, signInWithGoogle, signInWithApple, handleAppleRedirect, getUserData } from "@/lib/api/auth";
 import { isProfileComplete } from "@/lib/api/users";
@@ -413,20 +412,6 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Header with Logo */}
-      <div className="px-6 py-4">
-        <Link href="/" className="inline-flex items-center">
-          <Image
-            src={theme === "dark" ? "/images/logos/Taskzing-Logo-dark-mode_1.png" : "/images/logos/Taskzing-Logo-light-mode_1.png"}
-            alt="TaskZing"
-            width={140}
-            height={40}
-            className="h-10 w-auto"
-            priority
-          />
-        </Link>
-      </div>
-
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-md w-full space-y-8">
