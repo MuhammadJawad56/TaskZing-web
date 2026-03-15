@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MapPin, Map, Search, Heart, MessageSquare, Sparkles, Bookmark, Grid3x3, X, QrCode, Target } from "lucide-react";
+import { MapPin, Map, Search, Heart, MessageSquare, Bookmark, Grid3x3, X, QrCode, Target } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -636,7 +636,7 @@ export default function ClientHomePage() {
                   : "bg-red-500 text-white hover:bg-red-600"
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              <Sparkles className={`h-4 w-4 ${isFetchingLocation ? "animate-spin" : ""}`} />
+              <Target className={`h-4 w-4 ${isFetchingLocation ? "animate-spin" : ""}`} />
               {isFetchingLocation ? "Locating..." : "Near me"}
             </button>
             <div className="flex-1 relative">
