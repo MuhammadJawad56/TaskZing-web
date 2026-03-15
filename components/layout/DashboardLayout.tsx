@@ -411,9 +411,9 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode; onQRClick?: 
       return;
     }
     
-    // If client-only and doesn't have provider profile, show Become a Provider modal
+    // If client-only and doesn't have provider profile, navigate to become provider page
     if (isClientOnly && !hasProviderProfile) {
-      setShowBecomeProviderModal(true);
+      router.push("/become-provider");
       return;
     }
     

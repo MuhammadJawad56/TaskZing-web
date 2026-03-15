@@ -9,6 +9,7 @@ import { addStoredPaymentMethod, getStoredPaymentMethods } from "@/lib/api/payme
 import { Button } from "@/components/ui/Button";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 // Initialize Stripe only if key is available
 const getStripePromise = () => {
@@ -226,6 +227,8 @@ export default function BecomeProviderPage() {
         return;
       }
       setIsLoading(false);
+    } else {
+      setIsLoading(false);
     }
   }, [userData, router]);
 
@@ -300,138 +303,137 @@ export default function BecomeProviderPage() {
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-      </div>
+      <DashboardLayout>
+        <div className="min-h-screen flex items-center justify-center bg-[var(--app-bg)]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          router.back();
-        }
-      }}
-    >
-      {/* Modal Container */}
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <DashboardLayout>
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-2xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-                <Briefcase className="h-5 w-5 text-red-600" />
+        <div className="bg-[var(--app-surface)] dark:bg-darkBlue-013 rounded-2xl shadow-sm border border-theme-accent2 dark:border-gray-700 mb-6">
+          <div className="px-6 py-4 border-b border-theme-accent2 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <Briefcase className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Become a Provider</h1>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Complete your provider profile to start earning</p>
+                </div>
               </div>
-              <h1 className="text-xl font-bold text-gray-900">Become a Provider</h1>
-            </div>
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <X className="h-5 w-5 text-gray-500" />
-            </button>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="p-6 space-y-6">
-          {/* Error Message */}
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-              {error}
-            </div>
-          )}
-
-          {/* Role Confirmation */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-gray-600 mb-2">You are becoming a:</p>
-            <div className="flex items-center gap-2">
-              <Briefcase className="h-5 w-5 text-red-600" />
-              <span className="text-red-600 font-semibold">Provider</span>
-              <div className="ml-auto w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                <Check className="h-4 w-4 text-white" />
-              </div>
+              <button
+                onClick={() => router.back()}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-darkBlue-003 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              </button>
             </div>
           </div>
 
-          {/* Select Your Skills */}
-          <div>
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">Select Your Skills</h2>
-            <div className="grid grid-cols-3 gap-2">
-              {SKILLS.map((skill) => (
-                <button
-                  key={skill}
-                  type="button"
-                  onClick={() => toggleSkill(skill)}
-                  className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                    selectedSkills.includes(skill)
-                      ? "bg-red-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  {skill}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Service Description */}
-          <div>
-            <h2 className="text-sm font-semibold text-gray-900 mb-2">Service Description</h2>
-            <textarea
-              value={serviceDescription}
-              onChange={(e) => setServiceDescription(e.target.value)}
-              placeholder="Describe your services and expertise..."
-              rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-900 resize-none text-sm"
-            />
-          </div>
-
-          {/* Payment Details */}
-          <div>
-            {!hasPaymentMethod ? (
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setShowPaymentForm(true)}
-                  className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center justify-center gap-2 transition-colors"
-                >
-                  <CreditCard className="h-5 w-5" />
-                  <span>Add Payment Details</span>
-                </button>
-                <p className="mt-2 text-xs text-red-600">
-                  Add a payment method to verify your identity. It will also enable future payments.
-                </p>
-              </div>
-            ) : (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
-                <CreditCard className="h-5 w-5 text-green-600" />
-                <span className="text-sm text-green-700">Payment method added successfully</span>
+          {/* Main Content */}
+          <div className="p-6 space-y-6">
+            {/* Error Message */}
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                {error}
               </div>
             )}
-          </div>
-        </div>
 
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex gap-3 rounded-b-2xl">
-          <Button
-            variant="secondary"
-            onClick={() => router.back()}
-            className="flex-1"
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleSubmit}
-            disabled={isSubmitting || !hasPaymentMethod}
-            isLoading={isSubmitting}
-            className="flex-1"
-          >
-            Done
-          </Button>
+            {/* Role Confirmation */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-gray-600 mb-2">You are becoming a:</p>
+              <div className="flex items-center gap-2">
+                <Briefcase className="h-5 w-5 text-red-600" />
+                <span className="text-red-600 font-semibold">Provider</span>
+                <div className="ml-auto w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                  <Check className="h-4 w-4 text-white" />
+                </div>
+              </div>
+            </div>
+
+            {/* Select Your Skills */}
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 mb-3">Select Your Skills</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {SKILLS.map((skill) => (
+                  <button
+                    key={skill}
+                    type="button"
+                    onClick={() => toggleSkill(skill)}
+                    className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      selectedSkills.includes(skill)
+                        ? "bg-red-600 text-white shadow-sm"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    {skill}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Service Description */}
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 mb-2">Service Description</h2>
+              <textarea
+                value={serviceDescription}
+                onChange={(e) => setServiceDescription(e.target.value)}
+                placeholder="Describe your services and expertise..."
+                rows={5}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-gray-900 resize-none text-sm"
+              />
+            </div>
+
+            {/* Payment Details */}
+            <div>
+              {!hasPaymentMethod ? (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPaymentForm(true)}
+                    className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <CreditCard className="h-5 w-5" />
+                    <span>Add Payment Details</span>
+                  </button>
+                  <p className="mt-2 text-xs text-red-600">
+                    Add a payment method to verify your identity. It will also enable future payments.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+                  <CreditCard className="h-5 w-5 text-green-600" />
+                  <span className="text-sm text-green-700">Payment method added successfully</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="border-t border-theme-accent2 dark:border-gray-700 px-6 py-4 flex gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => router.back()}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSubmit}
+              disabled={isSubmitting || !hasPaymentMethod}
+              isLoading={isSubmitting}
+              className="flex-1"
+            >
+              Done
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -471,6 +473,6 @@ export default function BecomeProviderPage() {
           </div>
         </div>
       ) : null}
-    </div>
+    </DashboardLayout>
   );
 }
