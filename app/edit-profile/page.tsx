@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { MapPin } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/lib/api/AuthContext";
-import { getUserById, updateUser } from "@/lib/api/users";
+import { getUserById } from "@/lib/api/users";
 import { updateUserProfile } from "@/lib/api/auth";
 
 export default function EditProfilePage() {
@@ -48,7 +48,7 @@ export default function EditProfilePage() {
             username: (userProfile as any).username || user?.email?.split("@")[0] || "",
             email: userProfile.email || user?.email || "",
             location: userProfile.location || "",
-            bio: userProfile.description || userProfile.bio || "",
+            bio: userProfile.description || (userProfile as any).bio || "",
           });
           if (userProfile.photoUrl) {
             setPhotoPreview(userProfile.photoUrl);

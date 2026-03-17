@@ -101,6 +101,8 @@ function PaymentCardForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
       const paymentMethodData = {
         id: token.id,
         tokenId: token.id,
+        // For compatibility with PaymentMethod type used elsewhere
+        paymentMethodId: token.id,
         cardBrand: token.card?.brand || "unknown",
         last4: token.card?.last4 || "0000",
         expMonth: token.card?.exp_month || 0,

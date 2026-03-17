@@ -230,6 +230,11 @@ export default function PaymentMethodPage() {
       return;
     }
 
+    if (!user) {
+      alert("You must be signed in to delete a payment method.");
+      return;
+    }
+
     setDeletingId(docId);
     try {
       removeStoredPaymentMethod(user.uid, paymentMethodId);
