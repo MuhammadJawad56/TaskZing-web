@@ -1,0 +1,11 @@
+[build]
+  command = "npm run build"
+
+# Proxy backend API through Netlify to avoid browser CORS issues.
+# Frontend should call NEXT_PUBLIC_API_BASE_URL="/.netlify/backend"
+[[redirects]]
+  from = "/.netlify/backend/*"
+  to = "https://zing-te-task-zing-backend.vercel.app/:splat"
+  status = 200
+  force = true
+
