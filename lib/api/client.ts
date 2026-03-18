@@ -4,7 +4,7 @@
  */
 
 // On Netlify, prefer proxying through the same origin to avoid CORS issues.
-// Set NEXT_PUBLIC_API_BASE_URL='/.netlify/backend' in Netlify environment variables.
+// Set NEXT_PUBLIC_API_BASE_URL='/backend' in Netlify environment variables.
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "https://zing-te-task-zing-backend.vercel.app";
 
